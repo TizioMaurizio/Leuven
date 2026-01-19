@@ -1,0 +1,53 @@
+# Example configuration for HarbourSim
+# All times are in minutes unless otherwise specified
+
+# Random seed for reproducibility
+seed: 42
+
+# Simulation duration (minutes)
+duration: 480.0
+
+# Ship arrival parameters
+ship_interarrival_mean: 60.0  # Mean time between ship arrivals (exponential)
+ship_containers_min: 20       # Min containers per ship
+ship_containers_max: 80       # Max containers per ship
+num_berths: 3                 # Number of berths for ships
+
+# Quay crane parameters
+num_quay_cranes: 4            # Total quay cranes
+crane_unload_time_min: 1.5    # Min unload time per container (triangular)
+crane_unload_time_mode: 2.5   # Mode unload time per container
+crane_unload_time_max: 4.5    # Max unload time per container
+crane_move_speed: 10.0        # Crane movement speed (units per minute)
+
+# Yard parameters
+yard_width: 20                # Number of columns (bays)
+yard_height: 10               # Number of rows
+yard_max_stack_height: 4      # Max containers stacked
+
+# Yard mover parameters
+num_yard_movers: 4            # Straddle carriers / reach stackers (increased)
+yard_mover_time_min: 1.0      # Min yard move time
+yard_mover_time_mode: 2.0     # Mode yard move time
+yard_mover_time_max: 3.0      # Max yard move time
+
+# Truck parameters
+truck_interarrival_mean: 2.0  # Mean time between truck arrivals
+truck_load_time_min: 2.0      # Min loading time
+truck_load_time_mode: 3.0     # Mode loading time
+truck_load_time_max: 5.0      # Max loading time
+num_truck_gates: 4            # Number of truck gates (increased)
+
+# Visualization parameters
+render_enabled: true
+render_fps: 30
+render_speed: 10.0            # Simulation speed multiplier
+window_width: 1400
+window_height: 900
+
+# Logging
+log_events: true
+log_file: simulation.log
+
+# Output
+results_file: results.csv
