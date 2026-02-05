@@ -1,0 +1,3 @@
+python -m demanufacturing_sim --render
+python -m harbour_sim --render
+python -m manufacturing_loop_sim --render

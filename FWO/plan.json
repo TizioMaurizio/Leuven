@@ -1,0 +1,80 @@
+{
+  "project": {
+    "name": "Architectural Integration of Cognitive Mediation in Holonic Demanufacturing Systems",
+    "start_date": "2026-11-01"
+  },
+  "tasks": [
+    {
+      "id": "WP1",
+      "name": "Architectural definition of cognitive mediation layer",
+      "work_package": "WP1 – Literature Synthesis and Architectural Definition",
+      "phase": "Year 1",
+      "start_offset_months": 0,
+      "duration_months": 12,
+      "depends_on": []
+    },
+    {
+      "id": "WP2",
+      "name": "Industrial analysis and bottleneck typology",
+      "work_package": "WP2 – Industrial Analysis and Bottleneck Typology",
+      "phase": "Year 1",
+      "start_offset_months": 0,
+      "duration_months": 12,
+      "depends_on": []
+    },
+    {
+      "id": "WP3",
+      "name": "Extend UE5 digital twin with structured state abstraction",
+      "work_package": "WP3 – Digital Twin Extension for Structured Mediation",
+      "phase": "Year 2",
+      "start_offset_months": 12,
+      "duration_months": 12,
+      "depends_on": []
+    },
+    {
+      "id": "WP4",
+      "name": "Implement baseline rule-based and ML controllers",
+      "work_package": "WP4 – Baseline Controller Implementation",
+      "phase": "Year 2",
+      "start_offset_months": 12,
+      "duration_months": 12,
+      "depends_on": []
+    },
+    {
+      "id": "WP5",
+      "name": "Integrate cognitive mediator with cost-aware invocation",
+      "work_package": "WP5 – Cognitive Mediator Integration and Cost-Aware Invocation",
+      "phase": "Year 2",
+      "start_offset_months": 18,
+      "duration_months": 10,
+      "depends_on": ["WP3", "WP4"]
+    },
+    {
+      "id": "WP6",
+      "name": "Comparative evaluation of holonic control architectures",
+      "work_package": "WP6 – Comparative Evaluation of Holonic Control Architectures",
+      "phase": "Year 3",
+      "start_offset_months": 24,
+      "duration_months": 12,
+      "depends_on": ["WP5"]
+    },
+    {
+      "id": "WP7",
+      "name": "Local LLM deployment and latency sensitivity analysis",
+      "work_package": "WP7 – Local LLM Deployment and Latency Sensitivity Analysis",
+      "phase": "Year 3",
+      "start_offset_months": 24,
+      "duration_months": 12,
+      "depends_on": ["WP5"]
+    },
+    {
+      "id": "WP8",
+      "name": "Principle extraction and cross-scenario transferability",
+      "work_package": "WP8 – Principle Extraction and Cross-Scenario Transferability",
+      "phase": "Year 4",
+      "start_offset_months": 36,
+      "duration_months": 12,
+      "depends_on": ["WP6", "WP7"]
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # DIGITAU Demanufacturing Simulator
 
-A discrete-event simulation and visualization system for modeling battery and product lifecycle management in a circular economy context.
+A discrete-event simulation and visualization system for modeling battery and product lifecycle management in a circular economy context. Now extended with **holonic multi-agent control** and **cognitive orchestration**.
 
 ![Python](https://img.shields.io/badge/python-3.10+-blue.svg)
 ![SimPy](https://img.shields.io/badge/SimPy-4.0+-green.svg)
@@ -9,6 +9,15 @@ A discrete-event simulation and visualization system for modeling battery and pr
 ## Overview
 
 **DIGITAU** simulates a battery demanufacturing facility where end-of-life products undergo inspection, dismantling, and testing before being routed to their optimal circular economy destination.
+
+### New in v2.0: Holonic Control & Cognitive Orchestration
+
+This version introduces:
+- **Holonic Multi-Agent Architecture**: Product, Resource, Transport, and System holons
+- **Cognitive Orchestrator**: LLM-swappable meta-layer for policy modulation
+- **Uncertainty Modeling**: Structural, observational, stochastic, and operational uncertainty
+- **Fault Injection**: Predefined scenarios for resilience testing
+- **Enhanced Visualization**: Circular factory layout with orchestrator overlay
 
 ### Process Flow
 
@@ -59,10 +68,28 @@ pip install -e .
 
 ## Quick Start
 
-### Run with Visualization
+### Run with Visualization (Base Mode)
 
 ```bash
 python -m demanufacturing_sim --render
+```
+
+### Run with Holonic Control
+
+```bash
+python -m demanufacturing_sim --control holonic --render
+```
+
+### Run with Cognitive Orchestrator
+
+```bash
+python -m demanufacturing_sim --control orchestrated --render
+```
+
+### Run with Fault Injection
+
+```bash
+python -m demanufacturing_sim --control holonic --fault-scenario robot_down --render
 ```
 
 ### Run Headless (Fast)
@@ -74,14 +101,47 @@ python -m demanufacturing_sim --no-render
 ### Custom Parameters
 
 ```bash
-python -m demanufacturing_sim --render --duration 480 --seed 123 \
-    --inspection-stations 3 --dismantling-stations 4 --testing-stations 2
+python -m demanufacturing_sim --control orchestrated --render --duration 480 --seed 123 \
+    --fault-scenario cascading_failures --inspection-stations 3 --dismantling-stations 4
 ```
+
+## Control Modes
+
+### Base Mode (`--control base`)
+Default SimPy simulation without holonic extensions. Uses traditional centralized control.
+
+### Holonic Mode (`--control holonic`)
+Multi-agent control architecture where:
+- **ProductHolons**: Each product becomes an autonomous agent with goals and uncertainty awareness
+- **ResourceHolons**: Stations manage their own health, capacity, and task acceptance
+- **TransportHolons**: AGVs negotiate optimal paths and handle conflicts
+- **SystemHolon**: Aggregates global state and detects bottlenecks
+
+### Orchestrated Mode (`--control orchestrated`)
+Holonic + cognitive orchestrator layer that:
+- Monitors system-wide state via the SystemHolon
+- Selects global strategies (BALANCED, DEEP_DISASSEMBLY, EARLY_RECYCLE, etc.)
+- Emits guidance signals to modulate holon policies
+- Swappable rule-based brain with clean LLM interface
+
+## Fault Scenarios
+
+| Scenario | Description |
+|----------|-------------|
+| `none` | No faults (default) |
+| `robot_down` | Single dismantling station fails for 30 minutes |
+| `inspection_noise_high` | Inspection sensors degrade (2x observation noise) |
+| `surge_arrivals` | 3x arrival rate surge for 30 minutes |
+| `cascading_failures` | Multiple sequential resource failures |
+| `quality_crisis` | Surge of low-quality products (quality -0.3) |
+| `stress_test` | Combined faults + surge for maximum stress |
 
 ## Command Line Options
 
 | Option | Default | Description |
 |--------|---------|-------------|
+| `--control` / `-c` | base | Control mode: `base`, `holonic`, `orchestrated` |
+| `--fault-scenario` / `-f` | none | Fault scenario to inject |
 | `--render` / `-r` | False | Enable pygame visualization |
 | `--no-render` | True | Run headless without graphics |
 | `--duration` / `-d` | 240 | Simulation duration (minutes) |
@@ -125,23 +185,58 @@ The simulation tracks and reports:
 - Products per hour
 - Breakdown by exit category
 
+### Resilience Metrics (Holonic/Orchestrated modes)
+- Throughput degradation under faults
+- Throughput stability (inverse of variance)
+- Average recovery time
+- Resource health over time
+
+### Holonic Metrics
+- Product holon count and lifecycle
+- Resource health and failure counts
+- Average observation/structural uncertainty
+- Negotiation efficiency
+
+### Orchestrator Metrics (Orchestrated mode)
+- Guidance signals emitted
+- Strategy time distribution
+- Bottleneck detection and resolution
+
 ## Project Structure
 
 ```
 src/demanufacturing_sim/
-├── __init__.py          # Package exports
-├── __main__.py          # CLI entry point
-├── config.py            # Simulation configuration
-├── metrics.py           # KPI collection and reporting
+├── __init__.py               # Package exports
+├── __main__.py               # CLI entry point
+├── config.py                 # Simulation configuration
+├── metrics.py                # Base KPI collection
+├── metrics_holonic.py        # Enhanced resilience metrics
+├── agents/                   # Holonic multi-agent layer
+│   ├── __init__.py
+│   ├── event_bus.py          # Pub/sub for holon communication
+│   ├── product_holon.py      # Product agent with BOM uncertainty
+│   ├── resource_holon.py     # Station agent with health model
+│   ├── transport_holon.py    # AGV/conveyor agent
+│   ├── system_holon.py       # System-wide state aggregator
+│   └── holon_manager.py      # Coordinates all holons
+├── orchestrator/             # Cognitive orchestration layer
+│   ├── __init__.py
+│   └── llm_orchestrator.py   # Rule-based brain (LLM-swappable)
+├── policies/                 # Policy modules
+│   ├── holonic_negotiation.py    # Contract Net Protocol
+│   └── orchestrated_modulation.py # Policy adjustment
 ├── sim/
-│   ├── __init__.py      # Simulation module exports
-│   ├── entities.py      # Product, Batch, DPP, ExitVehicle
-│   ├── resources.py     # Stations, Buffer, Operators, Gates
-│   ├── policies.py      # Routing and assignment policies
-│   └── engine.py        # Main simulation orchestration
+│   ├── __init__.py           # Simulation module exports
+│   ├── entities.py           # Product, Batch, DPP, ExitVehicle
+│   ├── resources.py          # Stations, Buffer, Operators, Gates
+│   ├── policies.py           # Routing and assignment policies
+│   ├── engine.py             # Base simulation orchestration
+│   ├── holonic_engine.py     # Holonic simulation engine
+│   └── fault_injection.py    # Fault scenarios and injection
 └── viz/
-    ├── __init__.py      # Visualization exports
-    └── renderer.py      # Pygame factory visualization
+    ├── __init__.py           # Visualization exports
+    ├── renderer.py           # Base pygame visualization
+    └── holonic_renderer.py   # Circular layout + orchestrator panel
 ```
 
 ## Digital Product Passport (DPP)
@@ -159,6 +254,86 @@ class DigitalProductPassport:
     processing_history: List    # Record of all processing steps
     predicted_decision: ExitDecision  # ML/rule-based prediction
     actual_decision: ExitDecision     # Final routing decision
+```
+
+## Holonic Architecture
+
+### ProductHolon
+
+Each product becomes an autonomous agent with:
+- **BOM (Bill of Materials)**: True components vs. revealed components
+- **Uncertainty Model**: Structural + observational + stochastic + operational
+- **Disassembly Intent**: Goal preference (REUSE, RECYCLE, etc.)
+- **Value Estimation**: Predicted recovery value
+
+```python
+# Uncertainty model for each product
+observation_uncertainty = 0.15  # Sensor noise
+structural_uncertainty = 0.10   # BOM complexity
+stochastic_uncertainty = 0.05   # Random degradation
+operational_uncertainty = 0.05  # Processing variance
+```
+
+### ResourceHolon
+
+Each station manages:
+- **Health State**: HEALTHY → DEGRADED → CRITICAL → FAILED
+- **MTBF/MTTR Model**: Mean Time Between Failures / To Repair
+- **Capability Advertisement**: What operations it can perform
+- **Task Acceptance**: Whether to accept new tasks
+
+### TransportHolon
+
+AGVs and conveyors that:
+- Track position and current task
+- Negotiate with other transports
+- Handle congestion and blocking
+
+### SystemHolon
+
+Aggregates system-wide state:
+- Bottleneck detection
+- Queue monitoring
+- Throughput tracking
+- Health state summary
+
+## Cognitive Orchestrator
+
+The orchestrator is a meta-layer that:
+1. Observes system state via SystemHolon
+2. Selects global strategy based on rules
+3. Emits guidance signals to holons
+4. Has a clean interface for LLM integration
+
+### Strategies
+
+| Strategy | Trigger | Effect |
+|----------|---------|--------|
+| BALANCED | Default | No policy modulation |
+| DEEP_DISASSEMBLY | High-value products | Increase disassembly depth |
+| EARLY_RECYCLE | Low queue pressure | Divert low-quality early |
+| CLEAR_BOTTLENECK | High queue at station | Speed up, prioritize flow |
+| HIGH_VALUE_PRIORITY | High-value product surge | Prioritize valuable items |
+| RECOVERY_MODE | Resource failure | Conservative, reduce load |
+| SURGE_HANDLING | Arrival rate spike | Expedite processing |
+
+### LLM Integration
+
+The orchestrator uses a pluggable brain interface:
+
+```python
+class RuleBasedBrain(OrchestratorBrain):
+    def decide_strategy(self, context: Dict) -> StrategyType:
+        # Rule-based logic (default)
+        ...
+
+# Future: LLM-based brain
+class LLMBrain(OrchestratorBrain):
+    def decide_strategy(self, context: Dict) -> StrategyType:
+        # Call LLM API with context
+        prompt = self._build_prompt(context)
+        response = llm_api.complete(prompt)
+        return self._parse_strategy(response)
 ```
 
 ## Configuration

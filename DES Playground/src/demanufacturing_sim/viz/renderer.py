@@ -99,6 +99,8 @@ class FactoryRenderer:
         self.font = None
         self.small_font = None
         self.large_font = None
+        # Fullscreen flag (can be set on initialize)
+        self.fullscreen = False
         
         # State
         self._current_state: Optional[SimulationState] = None
@@ -130,12 +132,26 @@ class FactoryRenderer:
         """Initialize pygame and create window."""
         if self._initialized:
             return
-        
         pygame.init()
         pygame.display.set_caption("DIGITAU - Battery De/Remanufacturing Digital Twin")
-        
+
         rc = self.render_config
-        self.screen = pygame.display.set_mode((rc.width, rc.height))
+        # If fullscreen requested, query current display resolution
+        if getattr(self, 'fullscreen', False):
+            info = pygame.display.Info()
+            display_w, display_h = info.current_w, info.current_h
+            try:
+                # Use FULLSCREEN mode with native display resolution
+                self.screen = pygame.display.set_mode((display_w, display_h), pygame.FULLSCREEN)
+                # Update render_config to the new resolution for layout calculations
+                rc.width = display_w
+                rc.height = display_h
+            except Exception:
+                # Fallback to windowed mode if fullscreen fails
+                self.screen = pygame.display.set_mode((rc.width, rc.height))
+        else:
+            self.screen = pygame.display.set_mode((rc.width, rc.height))
+
         self.clock = pygame.time.Clock()
         
         self.font = pygame.font.SysFont("Arial", 14)
@@ -150,6 +166,92 @@ class FactoryRenderer:
         if self._initialized:
             pygame.quit()
             self._initialized = False
+
+    def show_popup(self, title: str, message: str, timeout_seconds: int = 10):
+        """Show a modal popup overlay with `title` and `message`.
+
+        Waits for any key press or mouse click, or for `timeout_seconds` to elapse.
+        Returns True if the popup was dismissed by user, False if window was closed.
+        """
+        # Do not reinitialize here; assume renderer is already initialized and
+        # a final frame has been drawn. Use the current screen surface size
+        # so the overlay matches the actual display (important for fullscreen).
+        if not self._initialized or not self.screen:
+            # If somehow not initialized, fall back to initialization.
+            try:
+                self.initialize()
+            except Exception:
+                pass
+
+        start = pygame.time.get_ticks()
+        clock = pygame.time.Clock()
+        dismissed = False
+
+        # Snapshot the current screen so we can restore it each frame and
+        # draw the translucent overlay on top. This ensures the popup appears
+        # as an overlay of the last drawn frame even if the main loop cleared
+        # or updated the display before we entered the popup.
+        try:
+            background = self.screen.copy()
+            screen_w, screen_h = background.get_size()
+        except Exception:
+            background = pygame.Surface((self.render_config.width, self.render_config.height))
+            screen_w, screen_h = self.render_config.width, self.render_config.height
+
+        # Create translucent overlay using per-pixel alpha
+        overlay = pygame.Surface((screen_w, screen_h), pygame.SRCALPHA)
+        overlay.fill((10, 10, 10, 180))  # RGBA with alpha for translucency
+
+        # Prepare text
+        title_surf = self.large_font.render(title, True, (255, 255, 255))
+        msg_surf = self.font.render(message, True, (220, 220, 220))
+        hint_surf = self.small_font.render("Press any key or click to close (or wait)...", True, (180, 180, 180))
+
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    return False
+                if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                    dismissed = True
+                    break
+
+            # Restore the last frame and draw overlay and text on top
+            try:
+                self.screen.blit(background, (0, 0))
+            except Exception:
+                pass
+            self.screen.blit(overlay, (0, 0))
+
+            # Center popup box
+            box_w = min(800, self.render_config.width - 200)
+            box_h = 180
+            box_x = (self.render_config.width - box_w) // 2
+            box_y = (self.render_config.height - box_h) // 2
+
+            pygame.draw.rect(self.screen, (40, 45, 55), pygame.Rect(box_x, box_y, box_w, box_h))
+            pygame.draw.rect(self.screen, (100, 120, 140), pygame.Rect(box_x, box_y, box_w, box_h), 2)
+
+            # Title and message
+            title_rect = title_surf.get_rect(center=(self.render_config.width // 2, box_y + 35))
+            self.screen.blit(title_surf, title_rect)
+
+            msg_rect = msg_surf.get_rect(center=(self.render_config.width // 2, box_y + 80))
+            self.screen.blit(msg_surf, msg_rect)
+
+            hint_rect = hint_surf.get_rect(center=(self.render_config.width // 2, box_y + 130))
+            self.screen.blit(hint_surf, hint_rect)
+
+            pygame.display.flip()
+
+            if dismissed:
+                return True
+
+            # Timeout
+            now = pygame.time.get_ticks()
+            if (now - start) >= timeout_seconds * 1000:
+                return True
+
+            clock.tick(30)
     
     def update_state(self, state: SimulationState):
         """Update the state to render."""

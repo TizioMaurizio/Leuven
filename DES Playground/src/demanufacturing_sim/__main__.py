@@ -1,11 +1,17 @@
 """
 DIGITAU Demanufacturing Simulator CLI Entry Point.
 
+Supports two control architectures:
+  - holonic: Multi-agent distributed control with product/resource holons
+  - orchestrated: Holonic + cognitive orchestrator (LLM-like meta-layer)
+
 Usage:
     python -m demanufacturing_sim [options]
 
 Example:
     python -m demanufacturing_sim --render
+    python -m demanufacturing_sim --control holonic --render
+    python -m demanufacturing_sim --control orchestrated --fault-scenario robot_down
     python -m demanufacturing_sim --duration 480 --seed 42
     python -m demanufacturing_sim --no-render --export results.csv
 
@@ -16,6 +22,13 @@ CONCEPT MAPPING (from HarbourSim):
 - Yard → Buffer (WIP storage)
 - Yard Mover → Operator (robot or human-robot collaborative)
 - Truck → Exit Vehicle (carries products to reuse/remanufacture/recycle)
+
+HOLONIC EXTENSIONS:
+- ProductHolon: Agent for each EoL product with BOM uncertainty model
+- ResourceHolon: Agent for each station with health/failure model
+- TransportHolon: Agent for AGVs/conveyors
+- SystemHolon: Aggregator for system-wide state
+- CognitiveOrchestrator: Rule-based brain (LLM-swappable interface)
 """
 
 import argparse
@@ -26,6 +39,17 @@ from demanufacturing_sim.config import SimConfig
 from demanufacturing_sim.sim.engine import DemanufacturingSimulation
 from demanufacturing_sim.metrics import MetricsCollector
 
+# Import holonic components
+try:
+    from demanufacturing_sim.sim.holonic_engine import (
+        HolonicDemanufacturingSimulation, ControlMode
+    )
+    from demanufacturing_sim.sim.fault_injection import FaultInjector
+    HOLONIC_AVAILABLE = True
+except ImportError as e:
+    HOLONIC_AVAILABLE = False
+    HOLONIC_IMPORT_ERROR = str(e)
+
 
 def parse_args():
     """Parse command-line arguments."""
@@ -35,10 +59,27 @@ def parse_args():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s --render                  # Run with visualization
-  %(prog)s --duration 480            # Run for 8 hours (480 minutes)
-  %(prog)s --seed 42 --no-render     # Reproducible headless run
-  %(prog)s --export results.csv      # Export metrics to CSV
+  %(prog)s --render                           # Run with visualization (base mode)
+  %(prog)s --control holonic --render         # Holonic multi-agent control
+  %(prog)s --control orchestrated --render    # With cognitive orchestrator
+  %(prog)s --control holonic --fault-scenario robot_down  # Fault injection
+  %(prog)s --duration 480                     # Run for 8 hours (480 minutes)
+  %(prog)s --seed 42 --no-render              # Reproducible headless run
+  %(prog)s --export results.csv               # Export metrics to CSV
+
+Control Modes:
+  base         Default SimPy simulation (no holons)
+  holonic      Multi-agent control with product/resource/transport holons
+  orchestrated Holonic + cognitive orchestrator (rule-based, LLM-swappable)
+
+Fault Scenarios:
+  none                 No faults (default)
+  robot_down           Single dismantling station fails
+  inspection_noise_high  Inspection sensors degrade
+  surge_arrivals       3x arrival rate for 30 minutes
+  cascading_failures   Multiple sequential failures
+  quality_crisis       Low-quality product surge
+  stress_test          Combined faults + surge
 
 Concept Mapping from Harbour Simulation:
   Container  → Product (end-of-life battery)
@@ -48,6 +89,25 @@ Concept Mapping from Harbour Simulation:
   YardMover  → Operator (robot or human)
   Truck      → ExitVehicle (to reuse/remanufacture/recycle)
         """
+    )
+    
+    # Control mode
+    parser.add_argument(
+        "--control", "-c",
+        type=str,
+        choices=["base", "holonic", "orchestrated"],
+        default="base",
+        help="Control architecture: base, holonic, or orchestrated (default: base)"
+    )
+    
+    # Fault injection
+    parser.add_argument(
+        "--fault-scenario", "-f",
+        type=str,
+        choices=["none", "robot_down", "inspection_noise_high", "surge_arrivals",
+                 "cascading_failures", "quality_crisis", "stress_test"],
+        default="none",
+        help="Fault scenario to inject (default: none)"
     )
     
     # Simulation parameters
@@ -65,6 +125,12 @@ Concept Mapping from Harbour Simulation:
         help="Random seed for reproducibility (default: 42)"
     )
     
+    parser.add_argument(
+        "--fullscreen",
+        action="store_true",
+        default=False,
+        help="Open visualization window maximized/fullscreen"
+    )
     # Station counts
     parser.add_argument(
         "--inspection-stations",
@@ -211,19 +277,36 @@ def run_headless(sim: DemanufacturingSimulation, verbose: bool = False):
     print(f"Simulation completed in {elapsed:.2f} seconds (wall clock)")
 
 
-def run_with_render(sim: DemanufacturingSimulation, config: SimConfig):
+def run_with_render(sim: DemanufacturingSimulation, config: SimConfig, use_holonic: bool = False, fullscreen: bool = False):
     """Run simulation with pygame visualization."""
-    try:
-        from demanufacturing_sim.viz.renderer import FactoryRenderer
-    except ImportError as e:
-        print(f"Error: pygame not installed. Install with: pip install pygame")
-        print(f"Details: {e}")
-        sys.exit(1)
+    if use_holonic:
+        try:
+            from demanufacturing_sim.viz.holonic_renderer import HolonicFactoryRenderer
+            renderer_class = HolonicFactoryRenderer
+        except ImportError:
+            from demanufacturing_sim.viz.renderer import FactoryRenderer
+            renderer_class = FactoryRenderer
+            use_holonic = False
+            print("Warning: Holonic renderer not available, using base renderer")
+    else:
+        try:
+            from demanufacturing_sim.viz.renderer import FactoryRenderer
+            renderer_class = FactoryRenderer
+        except ImportError as e:
+            print(f"Error: pygame not installed. Install with: pip install pygame")
+            print(f"Details: {e}")
+            sys.exit(1)
     
     print(f"Starting visualization (speed: {config.render_speed}x)...")
     print("Press ESC or close window to exit")
     
-    renderer = FactoryRenderer(config)
+    renderer = renderer_class(config)
+    # Apply fullscreen flag if requested
+    if fullscreen:
+        try:
+            renderer.fullscreen = True
+        except Exception:
+            pass
     renderer.initialize()
     
     # Initialize simulation processes
@@ -248,6 +331,15 @@ def run_with_render(sim: DemanufacturingSimulation, config: SimConfig):
                     break
             
             # Update renderer with current state
+            if use_holonic and hasattr(sim, 'get_enhanced_state'):
+                state = sim.get_enhanced_state()
+                if hasattr(renderer, 'update_enhanced_state'):
+                    renderer.update_enhanced_state(state)
+                else:
+                    renderer.update_state(state)
+            else:
+                state = sim.get_state()
+                renderer.update_state(state)
             state = sim.get_state()
             renderer.update_state(state)
             
@@ -273,11 +365,22 @@ def main():
     # Determine render mode
     render = args.render and not args.no_render
     
+    # Determine control mode
+    use_holonic = args.control in ("holonic", "orchestrated")
+    
+    if use_holonic and not HOLONIC_AVAILABLE:
+        print(f"Error: Holonic control not available: {HOLONIC_IMPORT_ERROR}")
+        print("Falling back to base simulation")
+        use_holonic = False
+        args.control = "base"
+    
     # Build configuration
     config = build_config(args)
     
     if args.verbose:
         print("Configuration:")
+        print(f"  Control Mode: {args.control}")
+        print(f"  Fault Scenario: {args.fault_scenario}")
         print(f"  Duration: {config.duration} minutes")
         print(f"  Seed: {config.seed}")
         print(f"  Inspection Stations: {config.num_inspection_stations}")
@@ -288,12 +391,25 @@ def main():
         print(f"  Render: {render}")
         print()
     
-    # Create simulation
-    sim = DemanufacturingSimulation(config)
+    # Create simulation based on control mode
+    if use_holonic:
+        control_mode = ControlMode.ORCHESTRATED if args.control == "orchestrated" else ControlMode.HOLONIC
+        sim = HolonicDemanufacturingSimulation(
+            config=config,
+            control_mode=control_mode,
+            fault_scenario=args.fault_scenario,
+            seed=args.seed
+        )
+        print(f"Using {args.control.upper()} control architecture")
+        if args.fault_scenario != "none":
+            print(f"Fault scenario: {args.fault_scenario}")
+    else:
+        sim = DemanufacturingSimulation(config)
+        print("Using BASE simulation engine")
     
     # Run simulation
     if render:
-        run_with_render(sim, config)
+        run_with_render(sim, config, use_holonic=use_holonic, fullscreen=args.fullscreen)
     else:
         run_headless(sim, args.verbose)
     
@@ -303,6 +419,16 @@ def main():
     
     if not args.quiet:
         collector.print_summary(metrics)
+        
+        # Print resilience metrics for holonic simulation
+        if use_holonic and hasattr(sim, 'get_resilience_metrics'):
+            resilience = sim.get_resilience_metrics()
+            print("\n--- Resilience Metrics ---")
+            for key, value in resilience.items():
+                if isinstance(value, float):
+                    print(f"  {key}: {value:.3f}")
+                else:
+                    print(f"  {key}: {value}")
     
     # Export if requested
     if args.export:

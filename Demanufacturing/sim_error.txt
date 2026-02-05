@@ -1,0 +1,25 @@
+Traceback (most recent call last):
+  File "C:\Users\m.vetere\Documents\Leuven\Demanufacturing\digital_twin\mock_hardware\mqtt_broker.py", line 125, in start
+    print(f"\u2713 MQTT broker running on port {self.port}")
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.12_3.12.2800.0_x64__qbz5n2kfra8p0\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2713' in position 0: character maps to <undefined>
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\m.vetere\Documents\Leuven\Demanufacturing\digital_twin\run_simulation.py", line 310, in <module>
+    main()
+  File "C:\Users\m.vetere\Documents\Leuven\Demanufacturing\digital_twin\run_simulation.py", line 302, in main
+    if runner.start():
+       ^^^^^^^^^^^^^^
+  File "C:\Users\m.vetere\Documents\Leuven\Demanufacturing\digital_twin\run_simulation.py", line 100, in start
+    if not self.broker.start():
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\m.vetere\Documents\Leuven\Demanufacturing\digital_twin\mock_hardware\mqtt_broker.py", line 159, in start
+    print(f"\u274c Failed to start broker on port {try_port}: {e}")
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.12_3.12.2800.0_x64__qbz5n2kfra8p0\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>

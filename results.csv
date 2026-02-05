@@ -1,0 +1,2 @@
+timestamp,simulation_duration,seed,total_ships,ships_completed,avg_ship_turnaround_time,total_containers,containers_unloaded,containers_delivered,avg_container_dwell_time,crane_utilization,total_crane_unloads,avg_yard_occupancy,max_yard_occupancy,peak_yard_count,total_trucks,trucks_served,trucks_gave_up,avg_truck_wait_time,throughput_containers_per_hour,throughput_trucks_per_hour
+2026-01-19T22:38:28.981165,480.0,42,8,0,0.0,461,119,105,8.878197772150724,0.836424798620344,130,0.0030388888888888887,0.01625,13,108,105,2,33.96636178993137,13.125,13.125

@@ -1,0 +1,143 @@
+{
+  "project": {
+    "name": "Cognitive Mediation in Holonic Control for Circular Electronics Demanufacturing",
+    "start_date": "2026-11-01"
+  },
+  "tasks": [
+    {
+      "id": "WP1-1",
+      "name": "Architectural literature synthesis and model specification",
+      "work_package": "WP1 – Literature Synthesis and Architectural Definition",
+      "phase": "Year 1",
+      "start_offset_months": 0,
+      "duration_months": 9,
+      "depends_on": []
+    },
+    {
+      "id": "WP1-2",
+      "name": "Define mediator interfaces, roles, and negative boundaries",
+      "work_package": "WP1 – Literature Synthesis and Architectural Definition",
+      "phase": "Year 1",
+      "start_offset_months": 6,
+      "duration_months": 6,
+      "depends_on": ["WP1-1"]
+    },
+    {
+      "id": "WP2-1",
+      "name": "Industrial bottleneck analysis for electronics demanufacturing",
+      "work_package": "WP2 – Industrial Analysis and Bottleneck Typology",
+      "phase": "Year 1",
+      "start_offset_months": 0,
+      "duration_months": 8,
+      "depends_on": []
+    },
+    {
+      "id": "WP2-2",
+      "name": "Bottleneck taxonomy and uncertainty source mapping",
+      "work_package": "WP2 – Industrial Analysis and Bottleneck Typology",
+      "phase": "Year 1",
+      "start_offset_months": 6,
+      "duration_months": 4,
+      "depends_on": ["WP2-1"]
+    },
+    {
+      "id": "WP3-1",
+      "name": "Extend UE5-DT with structured state abstraction layer",
+      "work_package": "WP3 – Digital Twin Extension for Structured Mediation",
+      "phase": "Year 2",
+      "start_offset_months": 12,
+      "duration_months": 9,
+      "depends_on": ["WP1-2", "WP2-2"]
+    },
+    {
+      "id": "WP3-2",
+      "name": "Model stochastic disassembly paths and operator holons",
+      "work_package": "WP3 – Digital Twin Extension for Structured Mediation",
+      "phase": "Year 2",
+      "start_offset_months": 15,
+      "duration_months": 6,
+      "depends_on": ["WP3-1"]
+    },
+    {
+      "id": "WP4-1",
+      "name": "Implement rule-based holonic controller",
+      "work_package": "WP4 – Baseline Controller Implementation",
+      "phase": "Year 2",
+      "start_offset_months": 12,
+      "duration_months": 6,
+      "depends_on": ["WP1-2"]
+    },
+    {
+      "id": "WP4-2",
+      "name": "Implement non-cognitive ML baseline (supervised router)",
+      "work_package": "WP4 – Baseline Controller Implementation",
+      "phase": "Year 2",
+      "start_offset_months": 15,
+      "duration_months": 6,
+      "depends_on": ["WP4-1"]
+    },
+    {
+      "id": "WP5-1",
+      "name": "Integrate cognitive mediator with structured state access",
+      "work_package": "WP5 – Cognitive Mediator Integration and Cost-Aware Invocation",
+      "phase": "Year 2",
+      "start_offset_months": 20,
+      "duration_months": 6,
+      "depends_on": ["WP3-2", "WP4-2"]
+    },
+    {
+      "id": "WP5-2",
+      "name": "Implement cost-aware LLM invocation and fallback logic",
+      "work_package": "WP5 – Cognitive Mediator Integration and Cost-Aware Invocation",
+      "phase": "Year 3",
+      "start_offset_months": 24,
+      "duration_months": 6,
+      "depends_on": ["WP5-1"]
+    },
+    {
+      "id": "WP6-1",
+      "name": "Comparative evaluation of 3 architectures under uncertainty",
+      "work_package": "WP6 – Comparative Evaluation of Holonic Control Architectures",
+      "phase": "Year 3",
+      "start_offset_months": 24,
+      "duration_months": 9,
+      "depends_on": ["WP5-2"]
+    },
+    {
+      "id": "WP7-1",
+      "name": "Deploy quantized local LLM for mediator runtime",
+      "work_package": "WP7 – Local LLM Deployment and Latency Sensitivity Analysis",
+      "phase": "Year 3",
+      "start_offset_months": 24,
+      "duration_months": 6,
+      "depends_on": ["WP5-2"]
+    },
+    {
+      "id": "WP7-2",
+      "name": "Latency and cost profiling for cognitive mediation",
+      "work_package": "WP7 – Local LLM Deployment and Latency Sensitivity Analysis",
+      "phase": "Year 3",
+      "start_offset_months": 30,
+      "duration_months": 6,
+      "depends_on": ["WP7-1"]
+    },
+    {
+      "id": "WP8-1",
+      "name": "Extract design principles from mediation architecture",
+      "work_package": "WP8 – Principle Extraction and Cross-Scenario Transferability",
+      "phase": "Year 4",
+      "start_offset_months": 36,
+      "duration_months": 6,
+      "depends_on": ["WP6-1"]
+    },
+    {
+      "id": "WP8-2",
+      "name": "Validate transferability to smartphone disassembly",
+      "work_package": "WP8 – Principle Extraction and Cross-Scenario Transferability",
+      "phase": "Year 4",
+      "start_offset_months": 42,
+      "duration_months": 6,
+      "depends_on": ["WP8-1"]
+    }
+  ]
+}
