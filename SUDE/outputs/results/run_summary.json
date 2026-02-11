@@ -1,0 +1,139 @@
+{
+  "seed": 42,
+  "sim_time": 2271.579999999958,
+  "config": {
+    "seed": 42,
+    "sim_end_time": 28800,
+    "arrival_rate_per_min": 0.5,
+    "mode": "waterjet",
+    "initial_known_models": 5,
+    "target_unique_models": 50,
+    "p_novel_model_base": 0.3,
+    "zipf_s": 1.2,
+    "distributions": {
+      "imaging_time": {
+        "type": "lognormal",
+        "mu": 2.0,
+        "sigma": 0.3
+      },
+      "retrieval_time": {
+        "type": "lognormal",
+        "mu": 0.5,
+        "sigma": 0.2
+      },
+      "lookup_time": {
+        "type": "constant",
+        "value": 2.0
+      },
+      "automation_time_waterjet": {
+        "type": "triangular",
+        "low": 20,
+        "mode": 30,
+        "high": 45
+      },
+      "automation_time_unscrew": {
+        "type": "triangular",
+        "low": 60,
+        "mode": 90,
+        "high": 140
+      },
+      "handover_time": {
+        "type": "triangular",
+        "low": 60,
+        "mode": 120,
+        "high": 200
+      },
+      "manual_new_model_time": {
+        "type": "triangular",
+        "low": 180,
+        "mode": 300,
+        "high": 600
+      },
+      "manual_fallback_time": {
+        "type": "triangular",
+        "low": 120,
+        "mode": 240,
+        "high": 480
+      },
+      "logging_time": {
+        "type": "constant",
+        "value": 5.0
+      }
+    },
+    "probabilities": {
+      "p_known_recognition": 0.97,
+      "p_unknown_false_match": 0.03,
+      "p_auto_success_waterjet": 0.85,
+      "p_auto_success_unscrew": 0.7
+    },
+    "capacities": {
+      "operator_count": 2,
+      "robot_cells": 1,
+      "camera_count": 1,
+      "retrieval_engines": 1
+    },
+    "visualization": {
+      "screen_width": 1400,
+      "screen_height": 800,
+      "token_radius": 12,
+      "token_move_duration_ms": 400,
+      "default_sim_speed": 20.0,
+      "fps": 60,
+      "station_positions": {
+        "ARRIVAL": [
+          80,
+          360
+        ],
+        "IMAGING": [
+          250,
+          200
+        ],
+        "RETRIEVAL": [
+          450,
+          200
+        ],
+        "LOOKUP": [
+          650,
+          120
+        ],
+        "AUTOMATION": [
+          850,
+          120
+        ],
+        "HANDOVER": [
+          1050,
+          120
+        ],
+        "MANUAL": [
+          650,
+          480
+        ],
+        "ONBOARDING": [
+          850,
+          480
+        ],
+        "LOGGING": [
+          1100,
+          360
+        ],
+        "EXIT": [
+          1280,
+          360
+        ]
+      },
+      "station_size": [
+        130,
+        60
+      ]
+    }
+  },
+  "total_arrivals": 24,
+  "total_departures": 19,
+  "throughput_per_hour": 33.05,
+  "retrieval_ratio": 0.7083,
+  "automation_success_ratio": 0.8824,
+  "avg_cycle_time": 352.44,
+  "p50_cycle_time": 327.98,
+  "p95_cycle_time": 656.02,
+  "onboarding_count": 4
+}
