@@ -1,0 +1,84 @@
+@startuml
+title Cognitively mediated holonic demanufacturing — High-level control pattern (local autonomy + uncertainty gate + human escalation)
+
+' --- layout helpers (reduce overlaps) ---
+skinparam linetype ortho
+skinparam dpi 180
+skinparam ranksep 300
+skinparam nodesep 500
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam activity {
+  BackgroundColor white
+  BorderColor black
+}
+
+|Customer|
+start
+:Provide device batch;
+
+|Holonic Shopfloor|
+:Execute step (Intake / Disassembly / Sorting / Shipping);
+:Try local resolution (rules, checklists, safe fallbacks);
+
+|Digital Twin + Trace|
+:Evaluate uncertainty-risk gate;
+if (Uncertainty gate: Uncertainty × Risk > threshold?) then (Yes)
+  :Append trace event (uncertainty);
+  :Update Twin state (context, hypotheses);
+
+  |Cognitive Mediator|
+  :Query Twin + Policies + Episodes;
+  :Draft recommendation + justification;
+  :Estimate confidence / residual risk;
+
+  |Digital Twin + Trace|
+  :Assess mediator output\n(confidence + residual risk);
+
+  if (Enough certainty AND risk manageable?) then (Yes)
+    |Cognitive Mediator|
+    :Send recommendation + explanation;
+
+    |Human Operator|
+    :Receive explanation\n(dashboard / audit trail);
+
+    |Holonic Shopfloor|
+    :Apply recommendation\n(or stop/quarantine if needed);
+
+    |Digital Twin + Trace|
+    :Append trace event (mediated action);
+    :Update Twin state (selected path);
+
+  else (No)
+    |Cognitive Mediator|
+    :Escalate case package\n(state snapshot + options + risks);
+
+    |Human Operator|
+    :Review explanation + evidence;
+    :Choose action\n(approve fallback / quarantine / manual intervention);
+
+    |Holonic Shopfloor|
+    :Execute human decision;
+
+    |Digital Twin + Trace|
+    :Append trace event (human decision);
+    :Update Twin state (resolved path);
+  endif
+
+else (No)
+  :Append trace event (normal);
+  :Update Twin state;
+endif
+
+|Digital Twin + Trace|
+:Commit chosen path\n(merge point);
+:Update metrics (WIP, yield, quality, cycle time);
+
+|Cognitive Mediator|
+:Store episode outcome\n(including human decision if any);
+
+|Customer|
+:Receive overview/certificates (optional);
+stop
+@enduml

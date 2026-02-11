@@ -1,0 +1,195 @@
+# =============================================================================
+# Daisy iPhone Disassembly DES – Default Configuration
+# =============================================================================
+# ALL numeric values are ASSUMPTIONS unless otherwise noted.
+# Parameters marked  to_calibrate: true  are candidates for calibration /
+# sensitivity analysis once real data becomes available.
+# =============================================================================
+
+sim:
+  time_horizon: 28800          # 8 h in seconds (ASSUMPTION)
+  warmup: 0
+  random_seed: 42
+  time_unit: "s"
+  run_id: "run_001"
+
+# ── Arrival (bin arrivals) ───────────────────────────────────────────────────
+arrival:
+  bin_interarrival:
+    dist: triangular
+    min: 60
+    mode: 180
+    max: 600
+    to_calibrate: true
+  bin_size:
+    dist: triangular_int
+    min: 5
+    mode: 20
+    max: 50
+    to_calibrate: true
+
+# ── Buffers (finite capacity → blocking/starvation study) ────────────────────
+buffers:
+  Q0: {capacity: 200}
+  Q1: {capacity: 200}
+  Q2: {capacity: 200}
+  Q3: {capacity: 200}
+  Q4: {capacity: 200}
+  Q5: {capacity: 500}
+
+# ── Resources (machines + human operators) ───────────────────────────────────
+resources:
+  op_feed:             {capacity: 1}
+  scanner:             {capacity: 1}
+  m1_fixture:          {capacity: 1}
+  m2_cooling_slot:     {capacity: 1}
+  op_battery_monitor:  {capacity: 1}
+  m3_punch:            {capacity: 1}
+  op_maint:            {capacity: 1}
+  m4_module:           {capacity: 1}
+  op_sort:             {capacity: 1}
+  op_pack:             {capacity: 1}
+
+# ── Station parameters ───────────────────────────────────────────────────────
+S1:
+  feed_time:
+    dist: triangular
+    min: 2
+    mode: 5
+    max: 15
+    to_calibrate: true
+  scan_time:
+    dist: triangular
+    min: 2
+    mode: 6
+    max: 20
+    to_calibrate: true
+  p_unknown_model:
+    value: 0.02
+    range: [0.0, 0.2]
+    to_calibrate: true
+
+S2:
+  m1_time:
+    dist: triangular
+    min: 10
+    mode: 30
+    max: 90
+    to_calibrate: true
+
+S3:
+  cool_remove_time:
+    dist: triangular
+    min: 20
+    mode: 60
+    max: 180
+    to_calibrate: true
+  p_battery_issue:
+    value: 0.03
+    range: [0.0, 0.3]
+    to_calibrate: true
+
+E2:
+  manual_battery_time:
+    dist: triangular
+    min: 30
+    mode: 120
+    max: 600
+    to_calibrate: true
+
+S4:
+  punch_time:
+    dist: triangular
+    min: 10
+    mode: 25
+    max: 60
+    to_calibrate: true
+  p_jam:
+    value: 0.01
+    range: [0.0, 0.2]
+    to_calibrate: true
+
+E3:
+  clear_time:
+    dist: triangular
+    min: 30
+    mode: 90
+    max: 300
+    to_calibrate: true
+  retry_policy: "retry_S4"    # retry_S4 | retry_after_clear (ASSUMPTION)
+
+S5:
+  m4_time:
+    dist: triangular
+    min: 15
+    mode: 45
+    max: 150
+    to_calibrate: true
+
+S6:
+  pack_time:
+    dist: triangular
+    min: 5
+    mode: 15
+    max: 60
+    to_calibrate: true
+
+# ── Output fractions (per-device yield model) ────────────────────────────────
+outputs:
+  mode: "counters"
+  profile:
+    batteries:
+      value: 1
+    logic_boards:
+      value: 1
+    housings:
+      value: 1
+    modules_magnets:
+      dist: bernoulli
+      p: 0.9
+      range: [0.2, 1.0]
+      to_calibrate: true
+    mixed_fines:
+      dist: triangular
+      min: 0.0
+      mode: 0.2
+      max: 1.0
+      to_calibrate: true
+
+# ── Monitoring & output ─────────────────────────────────────────────────────
+monitor:
+  sample_period: 30
+  output_dir: "runs/"
+  log_events_csv: true
+  log_samples_csv: true
+  write_metadata_json: true
+
+# ── Pygame visualisation ────────────────────────────────────────────────────
+viz:
+  enabled: true
+  backend: "pygame"
+  fps: 60
+  base_sim_dt: 1.0
+  speed_multiplier: 10.0
+  window_width: 1400
+  window_height: 700
+  token:
+    radius: 6
+    move_duration_ms: 200
+  layout:
+    station_positions:
+      S1: [100, 300]
+      S2: [320, 300]
+      S3: [540, 300]
+      S4: [760, 300]
+      S5: [980, 300]
+      S6: [1200, 300]
+      E2: [540, 460]
+      E3: [760, 460]
+    queue_positions:
+      Q0: [100, 200]
+      Q1: [320, 200]
+      Q2: [540, 200]
+      Q3: [760, 200]
+      Q4: [980, 200]
+      Q5: [1200, 200]

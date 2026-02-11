@@ -1,0 +1,73 @@
+@startuml
+' More whitespace / less overlap
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+' Global spacing knobs (tweak values as you like)
+skinparam dpi 170
+skinparam padding 20
+skinparam packagePadding 25
+skinparam nodesep 70
+skinparam ranksep 90
+
+'-------------------------
+' Blocks
+'-------------------------
+rectangle "Device batch" as Batch
+rectangle "Recovered fractions" as Fractions
+
+package "Physical system (shopfloor)" as Phys {
+  rectangle "Operational Holons\n(Intake / Disassembly / Sorting / Shipping)" as Holons
+}
+
+package "Cyber layer (added)" as Cyber {
+  rectangle "Digital Twin + Trace" as Twin
+  rectangle "Uncertainty Gate" as Gate
+  rectangle "Cognitive Mediator\n(LLM reasoning,\nPolicies + Episodes)" as Mediator
+}
+
+rectangle "Human Operator\n(Supervisor / Safety Authority)" as Human
+
+'-------------------------
+' Layout helpers (hidden links to create spacing/columns)
+'-------------------------
+Human -[hidden]-> Phys
+Phys  -[hidden]-> Fractions
+Batch -[hidden]-> Human
+Batch -[hidden]-> Fractions
+Phys  -[hidden]down-> Cyber
+Cyber -[hidden]-> Fractions
+
+'-------------------------
+' Material flow (solid)
+'-------------------------
+Batch --> Holons : material\nflow
+Holons --> Fractions : material\nflow
+
+'-------------------------
+' Information/advice loop (dashed)
+'-------------------------
+Holons ..down..> Twin : observations/events
+Twin ..> Gate : state/context
+Gate ..> Mediator : only if\nuncertainty high
+Mediator ..up..> Holons : advice/recommendations
+
+'-------------------------
+' Human-in-the-loop (dashed)
+'-------------------------
+Mediator ..> Human : explanations + escalation request\n(rationale, risk, confidence)
+Human ..> Holons : authorization / override\napprove safe plan / stop & safe-mode
+Human ..> Mediator : decision + constraints\n(for this episode)
+Human ..> Twin : annotations / incident notes
+
+'-------------------------
+' Legend
+'-------------------------
+note right of Fractions
+Legend
+----
+Solid arrow  = material/device/fractions flow
+Dashed arrow = information/advice/decision loop
+end note
+@enduml
