@@ -2,7 +2,7 @@
   "run_id": "run_001",
   "seed": 42,
   "time_horizon": 28800,
-  "sim_time_reached": 15479.0,
+  "sim_time_reached": 1994.0,
   "config": {
     "sim": {
       "time_horizon": 28800,
@@ -297,32 +297,32 @@
     }
   },
   "kpis": {
-    "throughput": 169,
-    "rejected": 5,
+    "throughput": 15,
+    "rejected": 0,
     "cycle_time": {
-      "count": 169,
-      "mean": 6629.669249262583,
-      "median": 6445.896154193451,
+      "count": 15,
+      "mean": 912.964965165313,
+      "median": 894.7430619411214,
       "min": 217.07347109727016,
-      "max": 12893.19931910938,
-      "std": 3659.2519079737663
+      "max": 1608.5337175575512,
+      "std": 413.4956995193518
     },
     "outputs": {
-      "devices_processed": 170,
+      "devices_processed": 15,
       "fraction_totals": {
-        "batteries": 170.0,
-        "logic_boards": 170.0,
-        "housings": 170.0,
-        "modules_magnets": 158.0,
-        "mixed_fines": 68.28958714653346
+        "batteries": 15.0,
+        "logic_boards": 15.0,
+        "housings": 15.0,
+        "modules_magnets": 14.0,
+        "mixed_fines": 5.479612090014296
       }
     },
     "final_wip": {
-      "Q0": 200,
-      "Q1": 200,
-      "Q2": 169,
+      "Q0": 32,
+      "Q1": 63,
+      "Q2": 14,
       "Q3": 0,
-      "Q4": 1,
+      "Q4": 0,
       "Q5": 0
     }
   }

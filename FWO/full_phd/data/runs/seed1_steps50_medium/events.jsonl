@@ -1,0 +1,100 @@
+{"time": 14.57637, "event": "product_arrive", "product": 0}
+{"time": 14.57637, "event": "start_inspection", "product": 0, "station": "inspection"}
+{"time": 21.025815, "event": "finish_inspection", "product": 0, "station": "inspection", "observed": {"stripped_screw": false, "stuck_adhesive": false, "missing_component": false, "battery_risk": false}}
+{"time": 21.025815, "event": "start_robot_disassembly", "product": 0, "station": "robot_disassembly"}
+{"time": 24.532163, "event": "product_arrive", "product": 1}
+{"time": 24.532163, "event": "start_inspection", "product": 1, "station": "inspection"}
+{"time": 28.152156, "event": "finish_robot_disassembly", "product": 0, "station": "robot_disassembly"}
+{"time": 28.152156, "event": "product_complete", "product": 0, "cycle_time": 13.5758}
+{"time": 30.617872, "event": "finish_inspection", "product": 1, "station": "inspection", "observed": {"stripped_screw": true, "stuck_adhesive": false, "missing_component": false, "battery_risk": false}}
+{"time": 30.617872, "event": "start_manual_disassembly", "product": 1, "station": "manual_disassembly"}
+{"time": 36.560899, "event": "product_arrive", "product": 2}
+{"time": 36.560899, "event": "start_inspection", "product": 2, "station": "inspection"}
+{"time": 43.950011, "event": "finish_inspection", "product": 2, "station": "inspection", "observed": {"stripped_screw": false, "stuck_adhesive": true, "missing_component": true, "battery_risk": false}}
+{"time": 43.950011, "event": "start_robot_disassembly", "product": 2, "station": "robot_disassembly"}
+{"time": 46.580005, "event": "finish_manual_disassembly", "product": 1, "station": "manual_disassembly"}
+{"time": 46.580005, "event": "product_complete", "product": 1, "cycle_time": 22.0478}
+{"time": 50.378961, "event": "product_arrive", "product": 3}
+{"time": 50.378961, "event": "start_inspection", "product": 3, "station": "inspection"}
+{"time": 53.218922, "event": "finish_robot_disassembly", "product": 2, "station": "robot_disassembly"}
+{"time": 53.218922, "event": "product_complete", "product": 2, "cycle_time": 16.658}
+{"time": 54.650682, "event": "finish_inspection", "product": 3, "station": "inspection", "observed": {"stripped_screw": false, "stuck_adhesive": true, "missing_component": false, "battery_risk": false}}
+{"time": 54.650682, "event": "start_robot_disassembly", "product": 3, "station": "robot_disassembly"}
+{"time": 62.417295, "event": "product_arrive", "product": 4}
+{"time": 62.417295, "event": "start_inspection", "product": 4, "station": "inspection"}
+{"time": 65.083148, "event": "finish_robot_disassembly", "product": 3, "station": "robot_disassembly"}
+{"time": 65.083148, "event": "product_complete", "product": 3, "cycle_time": 14.7042}
+{"time": 68.505481, "event": "finish_inspection", "product": 4, "station": "inspection", "observed": {"stripped_screw": false, "stuck_adhesive": true, "missing_component": false, "battery_risk": false}}
+{"time": 68.505481, "event": "start_robot_disassembly", "product": 4, "station": "robot_disassembly"}
+{"time": 73.613975, "event": "product_arrive", "product": 5}
+{"time": 73.613975, "event": "start_inspection", "product": 5, "station": "inspection"}
+{"time": 77.505423, "event": "finish_robot_disassembly", "product": 4, "station": "robot_disassembly"}
+{"time": 77.505423, "event": "product_complete", "product": 4, "cycle_time": 15.0881}
+{"time": 78.047176, "event": "finish_inspection", "product": 5, "station": "inspection", "observed": {"stripped_screw": false, "stuck_adhesive": false, "missing_component": false, "battery_risk": false}}
+{"time": 78.047176, "event": "start_robot_disassembly", "product": 5, "station": "robot_disassembly"}
+{"time": 81.057529, "event": "product_arrive", "product": 6}
+{"time": 81.057529, "event": "start_inspection", "product": 6, "station": "inspection"}
+{"time": 84.752264, "event": "finish_inspection", "product": 6, "station": "inspection", "observed": {"stripped_screw": false, "stuck_adhesive": false, "missing_component": false, "battery_risk": false}}
+{"time": 84.752264, "event": "start_manual_disassembly", "product": 6, "station": "manual_disassembly"}
+{"time": 89.483089, "event": "finish_robot_disassembly", "product": 5, "station": "robot_disassembly"}
+{"time": 89.483089, "event": "product_complete", "product": 5, "cycle_time": 15.8691}
+{"time": 90.391914, "event": "product_arrive", "product": 7}
+{"time": 90.391914, "event": "start_inspection", "product": 7, "station": "inspection"}
+{"time": 93.906283, "event": "finish_inspection", "product": 7, "station": "inspection", "observed": {"stripped_screw": false, "stuck_adhesive": false, "missing_component": false, "battery_risk": false}}
+{"time": 93.906283, "event": "start_robot_disassembly", "product": 7, "station": "robot_disassembly"}
+{"time": 99.619471, "event": "finish_manual_disassembly", "product": 6, "station": "manual_disassembly"}
+{"time": 99.619471, "event": "product_complete", "product": 6, "cycle_time": 18.5619}
+{"time": 101.451226, "event": "product_arrive", "product": 8}
+{"time": 101.451226, "event": "start_inspection", "product": 8, "station": "inspection"}
+{"time": 102.388642, "event": "finish_robot_disassembly", "product": 7, "station": "robot_disassembly"}
+{"time": 102.388642, "event": "product_complete", "product": 7, "cycle_time": 11.9967}
+{"time": 107.212884, "event": "finish_inspection", "product": 8, "station": "inspection", "observed": {"stripped_screw": false, "stuck_adhesive": false, "missing_component": false, "battery_risk": false}}
+{"time": 107.212884, "event": "start_robot_disassembly", "product": 8, "station": "robot_disassembly"}
+{"time": 112.962183, "event": "product_arrive", "product": 9}
+{"time": 112.962183, "event": "start_inspection", "product": 9, "station": "inspection"}
+{"time": 117.244598, "event": "finish_robot_disassembly", "product": 8, "station": "robot_disassembly"}
+{"time": 117.244598, "event": "product_complete", "product": 8, "cycle_time": 15.7934}
+{"time": 118.528965, "event": "finish_inspection", "product": 9, "station": "inspection", "observed": {"stripped_screw": false, "stuck_adhesive": false, "missing_component": false, "battery_risk": false}}
+{"time": 118.528965, "event": "start_robot_disassembly", "product": 9, "station": "robot_disassembly"}
+{"time": 127.034888, "event": "product_arrive", "product": 10}
+{"time": 127.034888, "event": "start_inspection", "product": 10, "station": "inspection"}
+{"time": 128.849305, "event": "finish_robot_disassembly", "product": 9, "station": "robot_disassembly"}
+{"time": 128.849305, "event": "product_complete", "product": 9, "cycle_time": 15.8871}
+{"time": 130.799679, "event": "finish_inspection", "product": 10, "station": "inspection", "observed": {"stripped_screw": false, "stuck_adhesive": false, "missing_component": false, "battery_risk": false}}
+{"time": 130.799679, "event": "start_robot_disassembly", "product": 10, "station": "robot_disassembly"}
+{"time": 137.077196, "event": "product_arrive", "product": 11}
+{"time": 137.077196, "event": "start_inspection", "product": 11, "station": "inspection"}
+{"time": 139.758487, "event": "finish_robot_disassembly", "product": 10, "station": "robot_disassembly"}
+{"time": 139.758487, "event": "product_complete", "product": 10, "cycle_time": 12.7236}
+{"time": 142.970603, "event": "finish_inspection", "product": 11, "station": "inspection", "observed": {"stripped_screw": false, "stuck_adhesive": false, "missing_component": true, "battery_risk": false}}
+{"time": 142.970603, "event": "start_robot_disassembly", "product": 11, "station": "robot_disassembly"}
+{"time": 145.309921, "event": "product_arrive", "product": 12}
+{"time": 145.309921, "event": "start_inspection", "product": 12, "station": "inspection"}
+{"time": 149.183141, "event": "finish_inspection", "product": 12, "station": "inspection", "observed": {"stripped_screw": false, "stuck_adhesive": false, "missing_component": false, "battery_risk": false}}
+{"time": 149.183141, "event": "start_manual_disassembly", "product": 12, "station": "manual_disassembly"}
+{"time": 153.848794, "event": "finish_robot_disassembly", "product": 11, "station": "robot_disassembly"}
+{"time": 153.848794, "event": "product_complete", "product": 11, "cycle_time": 16.7716}
+{"time": 156.101528, "event": "product_arrive", "product": 13}
+{"time": 156.101528, "event": "start_inspection", "product": 13, "station": "inspection"}
+{"time": 160.118722, "event": "finish_inspection", "product": 13, "station": "inspection", "observed": {"stripped_screw": false, "stuck_adhesive": false, "missing_component": false, "battery_risk": false}}
+{"time": 160.118722, "event": "start_robot_disassembly", "product": 13, "station": "robot_disassembly"}
+{"time": 163.33021, "event": "finish_manual_disassembly", "product": 12, "station": "manual_disassembly"}
+{"time": 163.33021, "event": "product_complete", "product": 12, "cycle_time": 18.0203}
+{"time": 166.172877, "event": "product_arrive", "product": 14}
+{"time": 166.172877, "event": "start_inspection", "product": 14, "station": "inspection"}
+{"time": 171.299182, "event": "finish_inspection", "product": 14, "station": "inspection", "observed": {"stripped_screw": false, "stuck_adhesive": false, "missing_component": false, "battery_risk": false}}
+{"time": 171.299182, "event": "start_manual_disassembly", "product": 14, "station": "manual_disassembly"}
+{"time": 171.541045, "event": "finish_robot_disassembly", "product": 13, "station": "robot_disassembly"}
+{"time": 171.541045, "event": "product_complete", "product": 13, "cycle_time": 15.4395}
+{"time": 179.246808, "event": "product_arrive", "product": 15}
+{"time": 179.246808, "event": "start_inspection", "product": 15, "station": "inspection"}
+{"time": 181.015377, "event": "finish_manual_disassembly", "product": 14, "station": "manual_disassembly"}
+{"time": 181.015377, "event": "product_complete", "product": 14, "cycle_time": 14.8425}
+{"time": 185.918416, "event": "finish_inspection", "product": 15, "station": "inspection", "observed": {"stripped_screw": false, "stuck_adhesive": false, "missing_component": false, "battery_risk": true}}
+{"time": 185.918416, "event": "start_hazard_handling", "product": 15, "station": "hazard_handling"}
+{"time": 191.553511, "event": "product_arrive", "product": 16}
+{"time": 191.553511, "event": "start_inspection", "product": 16, "station": "inspection"}
+{"time": 192.942505, "event": "finish_hazard_handling", "product": 15, "station": "hazard_handling"}
+{"time": 192.942505, "event": "start_robot_disassembly", "product": 15, "station": "robot_disassembly"}
+{"time": 195.904521, "event": "finish_inspection", "product": 16, "station": "inspection", "observed": {"stripped_screw": true, "stuck_adhesive": false, "missing_component": false, "battery_risk": false}}
+{"time": 195.904521, "event": "start_manual_disassembly", "product": 16, "station": "manual_disassembly"}

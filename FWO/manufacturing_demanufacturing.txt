@@ -1,0 +1,60 @@
+@startuml
+left to right direction
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam DefaultFontName SansSerif
+skinparam DefaultFontSize 30
+title Manufacturing vs Demanufacturing — Deterministic vs Stochastic Mapping
+
+package "Manufacturing\nDeterministic Mapping\n(Structural Certainty)" as M #E6F4FF {
+  [Known Component Set] as M_in
+  [Deterministic Process] as M_proc
+  [Identical Product] as M_out
+  [Fixed BOM] <<BOM>> as M_bom
+
+  M_in --> M_proc
+  M_proc --> M_out
+  M_out ..> M_bom : defined by
+
+  note right of M_bom
+    Known input structure
+    Known output structure
+  end note
+}
+
+package "Demanufacturing\nStochastic / Probabilistic Mapping\n(Input-state & Output Uncertainty)" as D #FFF1E6 {
+  [Product\n(Unknown Condition)] as D_in
+  [Variable / Probabilistic BOM] <<BOM>> as D_bom
+  [Stochastic Process] as D_proc
+  [Variable Component Set] as D_outset
+
+  [Component A\n(good)] as C1
+  [Component B\n(damaged)] as C2
+  [Component C\n(missing)] as C3
+  [Recyclable-only\nfraction] as C4
+
+  note left of D_in
+    Unknown Product State
+    (Input Uncertainty)
+  end note
+
+  D_in ..> D_bom : inferred
+  D_bom ..> D_proc
+
+  D_proc ..> C1 : p1
+  D_proc ..> C2 : p2
+  D_proc ..> C3 : p3
+  D_proc ..> C4 : p4
+
+  C1 ..> D_outset
+  C2 ..> D_outset
+  C3 ..> D_outset
+  C4 ..> D_outset
+
+  note right of D_outset
+    Probabilistic Component Recovery
+    (Output Uncertainty)
+    Variable and condition-dependent output
+  end note
+}
+@enduml

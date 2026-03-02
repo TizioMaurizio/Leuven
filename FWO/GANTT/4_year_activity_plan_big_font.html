@@ -1,0 +1,294 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>4-year activity plan</title>
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+  <style>
+    body {
+      font-family: Calibri;
+      font-size: 22px;   /* match milestone text size */
+      margin: 0;
+      padding: 2rem 1rem;
+      background: #ffffff;
+      color: #1a202c;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 2rem 2.2rem 1.6rem;
+      max-width: 1300px;
+      width: 100%;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 1rem;
+    }
+
+    .title { 
+      font-size: 1.9rem; 
+      font-weight: 700; 
+    }
+
+    .subtitle { 
+      font-size: 22px;
+      color: #4a5568; 
+    }
+
+    #chart { 
+      width: 100%; 
+      height: 600px; 
+    }
+
+    .legend-text {
+      font-size: 22px;
+      color: #4a5568;
+      margin-top: 1rem;
+      text-align: center;
+    }
+
+    .pill {
+      padding: 0.5rem 1rem;
+      border-radius: 999px;
+      background: #f3f4f6;
+      font-size: 22px;
+      font-weight: 600;
+      border: 1px solid #e5e7eb;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="card-header">
+      <div>
+      </div>
+    </div>
+
+    <div id="chart"></div>
+  </div>
+
+  <script>
+    const semesters = ["Y1 S1","Y1 S2","Y2 S1","Y2 S2","Y3 S1","Y3 S2","Y4 S1","Y4 S2"];
+    const idx = s => semesters.indexOf(s);
+
+    // Timeline now expressed in months (1..48)
+    const tasks = [
+      { wp: "WP1  Foundational modeling + benchmark",
+        startMonth: 1, endMonth: 12, color: "#E9C46A", opacity:0.95 },
+      { wp: "WP2  Digital Twin implementation",
+        startMonth: 13, endMonth: 24, color: "#2A9D8F", opacity:0.95 },
+      { wp: "WP3  Learning-to-update/ask + evaluation",
+        startMonth: 16, endMonth: 30, color: "#5DADE2", opacity:0.95 },
+      { wp: "WP4  Mediation contract + gate + assurance case",
+        startMonth: 25, endMonth: 36, color: "#F4A261", opacity:0.95 },
+      { wp: "WP5  Full system-level evaluation",
+        startMonth: 37, endMonth: 45, color: "#E76F51", opacity:0.95 }
+    ];
+
+    // Wrap long labels into multiple lines using <br> so they can break on the chart
+    function wrapLabel(text, maxLen) {
+      const words = text.split(/\s+/);
+      const lines = [];
+      let line = '';
+      for (const w of words) {
+        if ((line + ' ' + w).trim().length <= maxLen) {
+          line = (line + ' ' + w).trim();
+        } else {
+          if (line) lines.push(line);
+          line = w;
+        }
+      }
+      if (line) lines.push(line);
+      return lines.join('<br>');
+    }
+
+    const wrappedTasks = tasks.map(t => ({...t, wpWrapped: wrapLabel(t.wp, 30)}));
+
+    const monthPos = m => m - 1; // zero-based position for month m
+    const offsetMonths = 1; // horizontal shift so blocks align with Y1 Q1 line
+
+    const papers = [
+      {label:"Paper 1", start:10, end:12},
+      {label:"Paper 2", start:22, end:24},
+      {label:"Paper 3", start:28, end:30},
+      {label:"Paper 4", start:34, end:36},
+      {label:"Paper 5", start:43, end:45}
+    ];
+
+    const paperTrace = {
+      type: "bar",
+      orientation: "h",
+      x: papers.map(p => (p.end - p.start + 1)),
+      base: papers.map(p => monthPos(p.start) + offsetMonths),
+      y: papers.map(_ => "Papers"),
+      name: "Papers",
+      marker: {color: "#9CA3AF"}
+    };
+
+    const barTraces = wrappedTasks.map(t => {
+      const s = monthPos(t.startMonth);
+      const e = monthPos(t.endMonth) + 1;
+      return {
+        type: "bar",
+        orientation: "h",
+        x: [e - s],
+        base: [s + offsetMonths],
+        y: [t.wpWrapped],
+        name: t.wp.split("  ")[0],
+        marker: {
+          color: t.color,
+          opacity: t.opacity,
+          line: {width:1.5,color:"#ffffff"}
+        }
+      };
+    });
+
+    const milestones = [
+      {label:"M1", month:12, wp:wrappedTasks[0].wpWrapped},
+      {label:"M2", month:18, wp:wrappedTasks[1].wpWrapped},
+      {label:"M3", month:24, wp:wrappedTasks[2].wpWrapped},
+      {label:"M4", month:30, wp:wrappedTasks[3].wpWrapped},
+      {label:"M5", month:36, wp:wrappedTasks[3].wpWrapped},
+      {label:"M6", month:45, wp:wrappedTasks[4].wpWrapped},
+    ];
+
+    const msTrace = {
+      type:"scatter",
+      mode:"markers",
+      x:milestones.map(m=>monthPos(m.month) + offsetMonths),
+      y:milestones.map(m=>m.wp),
+      name:"Milestones",
+      marker:{symbol:"diamond",size:18,color:"#D62828",line:{color:"#ffffff",width:1.5}}
+    };
+
+    // Annotations for milestone labels, shifted up for breathing space
+    const msAnnotations = milestones.map(m => ({
+      x: monthPos(m.month) + offsetMonths,
+      y: m.wp,
+      xref: 'x', yref: 'y',
+      text: m.label,
+      showarrow: false,
+      font: {size: 22, color: '#111827'},
+      yshift: 30
+    }));
+
+    const categoryOrder = [
+      wrappedTasks[4].wpWrapped,
+      wrappedTasks[3].wpWrapped,
+      wrappedTasks[2].wpWrapped,
+      wrappedTasks[1].wpWrapped,
+      wrappedTasks[0].wpWrapped,
+      "Papers"
+    ];
+
+    // Build quarter tick positions and labels (Y1-Q1 .. Y4-Q4)
+    const quarterTickVals = [];
+    const quarterTickText = [];
+    for (let y = 1; y <= 4; y++) {
+      for (let q = 1; q <= 4; q++) {
+        const start = (y - 1) * 12 + (q - 1) * 3 + 1;
+        const end = start + 2;
+        const mid = monthPos(start + 1); // center month position for the quarter
+        quarterTickVals.push(mid);
+        quarterTickText.push(`Y${y} Q${q}`);
+      }
+    }
+    // Add an extra tick at the timeline end with no label (month 49)
+    quarterTickVals.push(monthPos(50));
+    quarterTickText.push("");
+
+    const wp = i => wrappedTasks[i].wpWrapped;
+
+    // Orthogonal connectors with a short horizontal tip so the arrow ends horizontal.
+    // Each connector produces up to three shapes (lead horizontal, vertical, tip horizontal)
+    // plus an annotation used solely for the arrowhead at the final horizontal segment.
+    function elbowArrow(ax, ay, x, y, color) {
+      const tipOffset = 0.9; // months; small horizontal tip so arrow points horizontally
+      const cornerX = x;
+      const shapes = [];
+      const width = 2.5;
+      if (ax !== cornerX) {
+        shapes.push({
+          type: "line", xref: "x", yref: "y",
+          x0: ax, y0: ay, x1: cornerX + 0.08, y1: ay,
+          line: { color: color, width: width }
+        });
+      }
+      // vertical segment from the corner down/up to target row
+      shapes.push({
+        type: "line", xref: "x", yref: "y",
+        x0: cornerX, y0: ay, x1: cornerX, y1: y,
+        line: { color: color, width: width }
+      });
+
+      const arrow = {
+        showarrow: true, text: "",
+        arrowhead: 2, arrowsize: 0.8, arrowwidth: width,
+        arrowcolor: color,
+        xref: "x", yref: "y", axref: "x", ayref: "y",
+        // arrow from cornerX -> cornerX + tipOffset at target row (horizontal arrowhead)
+        ax: cornerX, ay: y,
+        x: cornerX + tipOffset, y: y
+      };
+      return { shapes, arrow };
+    }
+    const critColor = "rgba(175,0,0,1)";
+    const secColor  = "rgba(175,0,0,1)";
+
+    const elbows = [
+      elbowArrow(13, wp(0), 14, wp(1), critColor),  // WP1 → WP2
+      elbowArrow(25, wp(1), 26, wp(3), critColor),  // WP2 → WP4
+      elbowArrow(37, wp(3), 38, wp(4), critColor),  // WP4 → WP5
+      elbowArrow(16, wp(1), 17, wp(2), secColor),   // WP2 → WP3
+      elbowArrow(31, wp(2), 38, wp(4), critColor),   // WP3 → WP5
+    ];
+    const cpShapes = [].concat(...elbows.map(e => e.shapes)).filter(Boolean);
+    const cpArrows = elbows.map(e => e.arrow);
+
+    const layout = {
+      barmode:"overlay",
+      bargap:0.35,
+      margin:{l:520,r:80,t:44,b:100},
+      paper_bgcolor:"#ffffff",
+      plot_bgcolor:"#ffffff",
+      font:{family:"Calibri", size:22},
+      shapes: cpShapes,
+      annotations: [...msAnnotations, ...cpArrows],
+      xaxis:{
+        tickvals: quarterTickVals,
+        ticktext: quarterTickText,
+        // extend range slightly to give spacing after last tick
+        range:[0,51],
+        showgrid:true,
+        gridcolor:"rgba(0,0,0,0.08)",
+        zeroline:false,
+        tickfont:{size:18}
+      },
+      yaxis:{
+        categoryorder:"array",
+        categoryarray:categoryOrder,
+        tickfont:{size:22}
+      },
+      legend:{
+        orientation:"h",
+        x:0.02,
+        y:1.18,
+        font:{size:22}
+      }
+    };
+
+    Plotly.newPlot("chart",[paperTrace,...barTraces,msTrace],layout,
+      {displaylogo:false,responsive:true});
+  </script>
+</body>
+</html>

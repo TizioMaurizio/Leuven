@@ -1,6 +1,6 @@
 {
   "seed": 42,
-  "sim_time": 2271.579999999958,
+  "sim_time": 20.0,
   "config": {
     "seed": 42,
     "sim_end_time": 28800,
@@ -127,13 +127,13 @@
       ]
     }
   },
-  "total_arrivals": 24,
-  "total_departures": 19,
-  "throughput_per_hour": 33.05,
-  "retrieval_ratio": 0.7083,
-  "automation_success_ratio": 0.8824,
-  "avg_cycle_time": 352.44,
-  "p50_cycle_time": 327.98,
-  "p95_cycle_time": 656.02,
-  "onboarding_count": 4
+  "total_arrivals": 1,
+  "total_departures": 0,
+  "throughput_per_hour": 0.0,
+  "retrieval_ratio": 1.0,
+  "automation_success_ratio": 0.0,
+  "avg_cycle_time": 0.0,
+  "p50_cycle_time": 0.0,
+  "p95_cycle_time": 0.0,
+  "onboarding_count": 0
 }
