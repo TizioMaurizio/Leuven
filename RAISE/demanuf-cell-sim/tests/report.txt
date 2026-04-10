@@ -1,0 +1,209 @@
+========================================================================
+DEMANUFACTURING CELL SIMULATION — TEST & ANALYSIS REPORT
+========================================================================
+Generated: 2026-04-11T00:05:20.374757
+Engine version: 0.1.0
+Total runs: 24
+Scenarios: Nominal Laptop, Hidden Screws, Swollen Battery, Strong Adhesive, Conflicting Signals, Repeated Failure, Easy Disassembly, Random
+Seeds: [1, 2, 3]
+
+------------------------------------------------------------------------
+TEST SUMMARY
+------------------------------------------------------------------------
+Passed: 23/24
+Failed: 1/24
+Warnings: 1
+
+FAILURES:
+  ✗ hazard_detection
+    1/4 (25.0%) swollen_battery runs have battery_hazard > 0.3
+
+WARNINGS:
+  ⚠ Hazard detection below 60%: 1/4 (25.0%) swollen_battery runs have battery_hazard > 0.3
+
+PASSED:
+  ✓ all_runs_complete
+    All 24 runs completed
+  ✓ all_runs_reach_output_bin
+    All 24 completed runs have valid output bins
+  ✓ step_count_reasonable
+    All runs within 100 steps (max=16)
+  ✓ events_monotonically_ordered
+    All event sequences monotonically ordered
+  ✓ first_event_is_arrival
+    All runs start with item_arrived
+  ✓ last_events_are_completion
+    All completed runs end with item_binned + item_completed
+  ✓ stations_are_valid
+    All station IDs valid
+  ✓ station_visits_cover_path
+    All runs cover required station path
+  ✓ no_duplicate_consecutive_visits
+    No invalid consecutive duplicate station visits
+  ✓ item_arrives_before_processing
+    All processing events occur after item arrival
+  ✓ beliefs_are_normalized
+    All belief snapshots sum to ~1.0
+  ✓ beliefs_never_zero
+    No belief ever reaches exactly 0.0
+  ✓ uncertainty_decreases_on_average
+    avg initial=0.998 → avg final=0.472 (decreased)
+  ✓ uncertainty_in_range
+    All uncertainty values in [0, 1]
+  ✓ dominant_belief_matches_truth
+    14/24 (58.3%) dominant beliefs match truth
+  ✓ easy_detection
+    3/3 (100.0%) easy_disassembly runs have easy_case or normal_path dominant
+  ✓ hazardous_products_routed_correctly
+    4/4 (100.0%) swollen_battery → output_hazardous
+  ✓ normal_products_not_hazardous
+    No normal/easy products routed to output_hazardous
+  ✓ policy_decisions_have_reasons
+    All 143 policy decisions have reasons
+  ✓ observations_generated
+    All runs produced observations (min=2)
+  ✓ observation_confidence_in_range
+    All observation confidences in (0, 1]
+  ✓ inspection_generates_observations
+    All inspection visits produced observations
+  ✓ same_seed_same_result
+    No duplicate scenario+seed combos found (or all matched)
+
+------------------------------------------------------------------------
+PER-SCENARIO STATISTICS
+------------------------------------------------------------------------
+
+  Conflicting Signals (3 runs)
+  Condition: normal
+  Steps: avg=11.0, min=11, max=11
+  Completed: 3/3
+  Output bins: {'output_reusable': 3}
+  Belief accuracy (dominant matches truth): 3/3
+  Final uncertainty: avg=0.519
+  Observations: avg=2.7
+
+  Easy Disassembly (3 runs)
+  Condition: easy_disassembly
+  Steps: avg=11.0, min=11, max=11
+  Completed: 3/3
+  Output bins: {'output_reusable': 3}
+  Belief accuracy (dominant matches truth): 0/3
+  Final uncertainty: avg=0.477
+  Observations: avg=2.7
+
+  Hidden Screws (3 runs)
+  Condition: hidden_screws
+  Steps: avg=14.3, min=11, max=16
+  Completed: 3/3
+  Output bins: {'output_unresolved': 2, 'output_reusable': 1}
+  Belief accuracy (dominant matches truth): 2/3
+  Final uncertainty: avg=0.313
+  Observations: avg=3.3
+
+  Nominal Laptop (3 runs)
+  Condition: normal
+  Steps: avg=11.0, min=11, max=11
+  Completed: 3/3
+  Output bins: {'output_reusable': 3}
+  Belief accuracy (dominant matches truth): 3/3
+  Final uncertainty: avg=0.496
+  Observations: avg=2.7
+
+  Random (3 runs)
+  Condition: random
+  Steps: avg=11.0, min=11, max=11
+  Completed: 3/3
+  Output bins: {'output_hazardous': 1, 'output_recoverable': 1, 'output_reusable': 1}
+  Belief accuracy (dominant matches truth): 1/3
+  Final uncertainty: avg=0.791
+  Observations: avg=2.7
+
+  Repeated Failure (3 runs)
+  Condition: hidden_screws
+  Steps: avg=14.3, min=11, max=16
+  Completed: 3/3
+  Output bins: {'output_unresolved': 2, 'output_reusable': 1}
+  Belief accuracy (dominant matches truth): 2/3
+  Final uncertainty: avg=0.313
+  Observations: avg=3.3
+
+  Strong Adhesive (3 runs)
+  Condition: strong_adhesive
+  Steps: avg=14.3, min=11, max=16
+  Completed: 3/3
+  Output bins: {'output_unresolved': 2, 'output_reusable': 1}
+  Belief accuracy (dominant matches truth): 2/3
+  Final uncertainty: avg=0.380
+  Observations: avg=3.3
+
+  Swollen Battery (3 runs)
+  Condition: swollen_battery
+  Steps: avg=10.7, min=10, max=11
+  Completed: 3/3
+  Output bins: {'output_hazardous': 3}
+  Belief accuracy (dominant matches truth): 1/3
+  Final uncertainty: avg=0.491
+  Observations: avg=2.7
+
+------------------------------------------------------------------------
+GLOBAL STATISTICS
+------------------------------------------------------------------------
+Total runs: 24
+Completion rate: 24/24
+Avg steps: 12.2
+Avg observations per run: 2.9
+Avg initial uncertainty: 0.998
+Avg final uncertainty: 0.472
+Output bin distribution: {'output_reusable': 13, 'output_unresolved': 6, 'output_hazardous': 4, 'output_recoverable': 1}
+Overall belief accuracy: 14/24 (58.3%)
+
+Event type frequencies (across all runs):
+  transfer_started: 150
+  unscrewing_attempted: 69
+  observation_received: 47
+  inspection_started: 32
+  item_arrived: 24
+  item_binned: 24
+  item_completed: 24
+  escalation_started: 24
+  unscrewing_started: 23
+  unscrewing_succeeded: 17
+  unscrewing_failed: 6
+  escalation_resolved: 6
+  battery_check_started: 2
+  battery_risk_flagged: 1
+
+Observation type frequencies (across all runs):
+  visual_normal: 26
+  screw_low_resistance: 17
+  visual_screw_anomaly: 6
+  operator_diagnosis: 6
+  screw_high_resistance: 4
+  visual_battery_bulge: 4
+  screw_failure: 2
+  visual_adhesive: 2
+  visual_missing: 2
+  battery_high_voltage: 1
+
+Station visit frequencies (across all runs):
+  input_buffer: 24
+  conveyor: 24
+  inspection: 24
+  unscrewing: 23
+  output_reusable: 13
+  manual_escalation: 6
+  output_unresolved: 6
+  output_hazardous: 4
+  battery_check: 1
+  output_recoverable: 1
+
+Policy action frequencies (across all runs):
+  inspect_more: 55
+  continue: 37
+  complete: 24
+  escalate: 20
+  reroute_battery: 7
+
+========================================================================
+END OF REPORT
+========================================================================
