@@ -11,6 +11,8 @@ import { conditionToHypothesis } from '../sim/belief';
 import BeliefBar from './BeliefBar';
 import UncertaintyMeter from './UncertaintyMeter';
 import ExplanationBox from './ExplanationBox';
+import DecisionPanel from './DecisionPanel';
+import MetricsPanel from './MetricsPanel';
 
 // ── Props ────────────────────────────────────────────────────────────
 
@@ -351,7 +353,15 @@ export default function BeliefView({ snapshot, showTrueState, onToggleTrueState 
           </div>
         </section>
 
-        {/* Section E: Policy Recommendation */}
+        {/* Section E: Structured Decision */}
+        <section>
+          <DecisionPanel
+            decision={snapshot.currentDecision}
+            decisionHistory={snapshot.decisionHistory}
+          />
+        </section>
+
+        {/* Section E (legacy): Policy Recommendation */}
         <section>
           <ExplanationBox
             recommendation={belief.recommendedAction}
@@ -394,6 +404,13 @@ export default function BeliefView({ snapshot, showTrueState, onToggleTrueState 
                 );
               })}
             </div>
+          </section>
+        )}
+
+        {/* Section G: Run Metrics */}
+        {(snapshot.completedProducts ?? []).length > 0 && (
+          <section>
+            <MetricsPanel completedProducts={snapshot.completedProducts} />
           </section>
         )}
       </div>

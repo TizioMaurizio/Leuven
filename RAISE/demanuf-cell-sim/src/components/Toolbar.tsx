@@ -21,6 +21,9 @@ interface ToolbarProps {
   phase: string;
   productNumber: number;
   binCounts: Record<string, number>;
+  policyPreset: string;
+  policyPresets: string[];
+  onPolicyChange: (key: string) => void;
 }
 
 function phaseBadge(phase: string): string {
@@ -48,6 +51,7 @@ export default function Toolbar({
   onPlay, onPause, onStep, onReset, onExport,
   onSpeedChange, onScenarioChange, onSeedChange,
   seed, step, phase, productNumber, binCounts,
+  policyPreset, policyPresets, onPolicyChange,
 }: ToolbarProps) {
   const [exportLabel, setExportLabel] = useState('Export');
 
@@ -142,6 +146,20 @@ export default function Toolbar({
             </option>
           ))}
         </select>
+
+        {/* Policy */}
+        <div className="flex flex-col gap-0.5">
+          <label className="text-xs text-gray-400">Policy</label>
+          <select
+            value={policyPreset}
+            onChange={(e) => onPolicyChange(e.target.value)}
+            className="bg-surface-lighter text-gray-300 text-xs rounded-lg px-2 py-1.5 border border-white/5 focus:outline-none focus:ring-1 focus:ring-accent-blue/40"
+          >
+            {policyPresets.map((key) => (
+              <option key={key} value={key}>{key.replace(/_/g, ' ')}</option>
+            ))}
+          </select>
+        </div>
 
         {/* Seed */}
         <label className="flex items-center gap-1.5 text-xs text-gray-400">

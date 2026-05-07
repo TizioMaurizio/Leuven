@@ -15,6 +15,7 @@ export default function App() {
       sim.snapshot,
       sim.scenarios[sim.scenarioIndex].name,
       sim.seed,
+      sim.config,
     );
     navigator.clipboard.writeText(md).catch(() => {});
 
@@ -48,6 +49,9 @@ export default function App() {
         phase={sim.snapshot.phase}
         productNumber={sim.snapshot.productNumber ?? 1}
         binCounts={sim.snapshot.binCounts ?? {}}
+        policyPreset={sim.policyKey}
+        policyPresets={sim.policyPresets}
+        onPolicyChange={sim.setPolicyConfig}
       />
 
       {/* Main content: two panels side by side */}
