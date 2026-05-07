@@ -1,13 +1,17 @@
 import { createRNG, pickWeighted } from './random';
 import { createInitialBelief, updateBelief, conditionToHypothesis, getDominantHypothesis } from './belief';
-import { evaluatePolicy } from './policy';
+import { evaluatePolicy, selectOutputBin } from './policy';
+import { PolicyConfig, DEFAULT_POLICY_CONFIG } from './config';
 import type {
   BeliefState,
   CompletedProduct,
+  DecisionRecord,
   EventType,
   HiddenCondition,
+  Hypothesis,
   Observation,
   PolicyRecommendation,
+  ProductTrace,
   ProductTrueState,
   Scenario,
   SimEvent,
@@ -56,7 +60,12 @@ const ALL_CONDITIONS: HiddenCondition[] = [
 // ── Policy bridge ────────────────────────────────────────────────────
 // The engine builds a lightweight snapshot for the policy module.
 
-function selectPolicy(belief: BeliefState, currentStation: StationId, ctx: PolicyContext): PolicyRecommendation {
+function selectPolicy(
+  belief: BeliefState,
+  currentStation: StationId,
+  ctx: PolicyContext,
+  config: PolicyConfig,
+): PolicyRecommendation {
   // Build a minimal snapshot the policy can evaluate.
   // The engine calls this before a full snapshot is available,
   // so we synthesize the fields the policy inspects.
@@ -76,13 +85,18 @@ function selectPolicy(belief: BeliefState, currentStation: StationId, ctx: Polic
     binCounts: {},
     unscrewAttempts: ctx.unscrewAttempts,
     unscrewSucceeded: ctx.unscrewSucceeded,
+    currentDecision: null,
+    decisionHistory: [],
+    productTraces: [],
+    evidenceRequestCount: ctx.evidenceRequestCount ?? 0,
   };
-  return evaluatePolicy(minSnap);
+  return evaluatePolicy(minSnap, config);
 }
 
 interface PolicyContext {
   unscrewAttempts: number;
   unscrewSucceeded: boolean;
+  evidenceRequestCount?: number;
   _events?: SimEvent[];
 }
 
@@ -328,14 +342,6 @@ function unscrewSuccessProbability(product: ProductTrueState): number {
 
 // ── Routing logic ────────────────────────────────────────────────────
 
-function selectOutputBin(belief: BeliefState): StationId {
-  if (belief.beliefs.battery_hazard > 0.5) return 'output_hazardous';
-  if (belief.beliefs.structural_damage > 0.4 || belief.beliefs.missing_parts > 0.4) return 'output_recoverable';
-  if (belief.beliefs.hidden_fastener > 0.4 || belief.beliefs.adhesive_issue > 0.4) return 'output_recoverable';
-  if (belief.beliefs.normal_path > 0.3 || belief.beliefs.easy_case > 0.3) return 'output_reusable';
-  return 'output_unresolved';
-}
-
 // ── Deep copy helper ─────────────────────────────────────────────────
 
 function deepCopy<T>(obj: T): T {
@@ -352,11 +358,15 @@ function computeEnabled(station: StationId, belief: BeliefState, ctx: PolicyCont
       const targets: StationId[] = ['unscrewing'];
       if (belief.beliefs.battery_hazard > 0.3) targets.push('battery_check');
       if (belief.uncertainty > 0.8) targets.push('manual_escalation');
+      targets.push('inspection'); // re-inspection for evidence seeking
+      targets.push('output_unresolved'); // abstention routing
       return targets;
     }
     case 'unscrewing': {
       if (ctx.unscrewAttempts >= 2) return ['manual_escalation'];
-      const targets: StationId[] = ['output_reusable', 'output_recoverable'];
+      const targets: StationId[] = ['output_reusable', 'output_recoverable', 'output_hazardous', 'output_unresolved'];
+      targets.push('unscrewing');     // retry on failure
+      targets.push('inspection');      // evidence seeking on failure
       if (ctx.unscrewAttempts >= 1) targets.push('manual_escalation');
       return targets;
     }
@@ -373,6 +383,7 @@ function computeEnabled(station: StationId, belief: BeliefState, ctx: PolicyCont
 export class SimEngine {
   private snapshot: SimulationSnapshot;
   private rng: () => number;
+  private config: PolicyConfig;
   private unscrewAttempts = 0;
   private unscrewSucceeded = false;
   private inspectionDone = false;
@@ -382,14 +393,25 @@ export class SimEngine {
   private scenario: Scenario;
   private productStartStep = 0;
 
-  constructor(seed: number, scenario: Scenario) {
+  // Per-product tracking
+  private routePath: StationId[] = [];
+  private escalated = false;
+  private evidenceRequestCount = 0;
+  private beliefHistory: Array<{ step: number; beliefs: Record<Hypothesis, number>; uncertainty: number }> = [];
+
+  constructor(seed: number, scenario: Scenario, config?: PolicyConfig) {
     this.rng = createRNG(seed);
     this.scenario = scenario;
+    this.config = config ?? DEFAULT_POLICY_CONFIG;
     this.snapshot = this.buildInitialSnapshot(scenario);
   }
 
   setMaxProducts(n: number): void {
     this.maxProducts = n;
+  }
+
+  setConfig(config: PolicyConfig): void {
+    this.config = config;
   }
 
   // ── Public API ────────────────────────────────────────────────────
@@ -402,9 +424,10 @@ export class SimEngine {
     return this.snapshot.phase === 'completed';
   }
 
-  reset(seed: number, scenario: Scenario): void {
+  reset(seed: number, scenario: Scenario, config?: PolicyConfig): void {
     this.rng = createRNG(seed);
     this.scenario = scenario;
+    if (config) this.config = config;
     this.unscrewAttempts = 0;
     this.unscrewSucceeded = false;
     this.inspectionDone = false;
@@ -412,6 +435,10 @@ export class SimEngine {
     this.awaitingNextProduct = false;
     this.maxProducts = Infinity;
     this.productStartStep = 0;
+    this.routePath = [];
+    this.escalated = false;
+    this.evidenceRequestCount = 0;
+    this.beliefHistory = [];
     this.snapshot = this.buildInitialSnapshot(scenario);
   }
 
@@ -435,11 +462,12 @@ export class SimEngine {
       if (this.pendingObservations.length > 0) {
         const obs = this.pendingObservations.shift()!;
         s.belief = updateBelief(s.belief, obs);
+        this.recordBeliefSnapshot(s);
         const evt = this.makeEvent(s.step, 'observation_received', s.currentStation,
           `Observation at ${STATION_LABELS[s.currentStation]}: ${obs.evidence}`, obs);
         s.events.push(evt);
         s.lastEvent = evt;
-        s.belief.recommendedAction = selectPolicy(s.belief, s.currentStation, this.policyCtx());
+        s.belief.recommendedAction = selectPolicy(s.belief, s.currentStation, this.policyCtx(), this.config);
         s.enabledTransitions = computeEnabled(s.currentStation, s.belief, this.policyCtx());
         return this.getSnapshot();
       }
@@ -461,6 +489,7 @@ export class SimEngine {
       if (this.pendingObservations.length > 0) {
         const obs = this.pendingObservations.shift()!;
         s.belief = updateBelief(s.belief, obs);
+        this.recordBeliefSnapshot(s);
       }
 
       // Station-specific completion logic
@@ -479,7 +508,82 @@ export class SimEngine {
   // ── Internal ──────────────────────────────────────────────────────
 
   private policyCtx(): PolicyContext {
-    return { unscrewAttempts: this.unscrewAttempts, unscrewSucceeded: this.unscrewSucceeded, _events: this.snapshot?.events ?? [] };
+    return {
+      unscrewAttempts: this.unscrewAttempts,
+      unscrewSucceeded: this.unscrewSucceeded,
+      evidenceRequestCount: this.evidenceRequestCount,
+      _events: this.snapshot?.events ?? [],
+    };
+  }
+
+  private recordBeliefSnapshot(s: SimulationSnapshot): void {
+    this.beliefHistory.push({
+      step: s.step,
+      beliefs: { ...s.belief.beliefs },
+      uncertainty: s.belief.uncertainty,
+    });
+  }
+
+  private buildMinimalSnapshot(s: SimulationSnapshot): SimulationSnapshot {
+    return {
+      step: s.step,
+      phase: s.phase,
+      product: s.product,
+      currentStation: s.currentStation,
+      stations: s.stations,
+      belief: s.belief,
+      events: s.events,
+      enabledTransitions: s.enabledTransitions,
+      lastEvent: s.lastEvent,
+      outputBin: s.outputBin,
+      productNumber: s.productNumber,
+      completedProducts: s.completedProducts,
+      binCounts: s.binCounts,
+      unscrewAttempts: s.unscrewAttempts,
+      unscrewSucceeded: s.unscrewSucceeded,
+      currentDecision: s.currentDecision,
+      decisionHistory: s.decisionHistory,
+      productTraces: s.productTraces,
+      evidenceRequestCount: s.evidenceRequestCount,
+    };
+  }
+
+  private recordDecision(
+    s: SimulationSnapshot,
+    station: StationId,
+    rec: PolicyRecommendation,
+    nextStation: StationId,
+  ): void {
+    const enabled = computeEnabled(station, s.belief, this.policyCtx());
+    const blocked = enabled.filter(t => t !== nextStation);
+    const dominant = getDominantHypothesis(s.belief.beliefs);
+    const decision = rec.decision ?? {
+      type: 'route_moderate' as const,
+      selectedRoute: nextStation,
+      confidenceLevel: 'moderate' as const,
+      topHypothesis: { hypothesis: dominant.hypothesis, probability: dominant.confidence },
+      top2Hypothesis: null,
+      top2Margin: 0,
+      uncertainty: s.belief.uncertainty,
+      hazardPresent: s.belief.beliefs.battery_hazard > 0.2,
+      reasonCodes: [],
+      reason: rec.reason,
+      enabledAlternatives: enabled,
+      source: 'standard_policy' as const,
+      additionalEvidenceAvailable: false,
+      evidenceRequestCount: this.evidenceRequestCount,
+    };
+    const decisionRecord: DecisionRecord = {
+      step: s.step,
+      station,
+      decision,
+      beliefSnapshot: { ...s.belief.beliefs },
+      enabledTransitions: enabled,
+      selected: nextStation,
+      blocked,
+    };
+    s.decisionHistory.push(decisionRecord);
+    s.currentDecision = decision;
   }
 
   private archiveCurrentProduct(outputBin: StationId): void {
@@ -494,9 +598,31 @@ export class SimEngine {
       finalUncertainty: s.belief.uncertainty,
       dominantBelief: dominant,
       beliefCorrect: dominant.hypothesis === trueHyp,
+      escalated: this.escalated,
+      abstained: s.currentDecision?.type === 'abstain_unresolved',
+      evidenceRequests: this.evidenceRequestCount,
+      decisionCount: s.decisionHistory.length,
+      routePath: [...this.routePath],
     };
     s.completedProducts.push(completed);
     s.binCounts[outputBin] = (s.binCounts[outputBin] ?? 0) + 1;
+  }
+
+  private buildProductTrace(s: SimulationSnapshot): ProductTrace {
+    return {
+      productId: s.product.id,
+      productNumber: s.productNumber,
+      trueCondition: s.product.condition,
+      startStep: this.productStartStep,
+      endStep: s.step,
+      outputBin: s.outputBin!,
+      decisions: [...s.decisionHistory],
+      beliefEvolution: [...this.beliefHistory],
+      observations: [...s.belief.observations],
+      evidenceRequests: this.evidenceRequestCount,
+      escalated: this.escalated,
+      abstained: s.currentDecision?.type === 'abstain_unresolved',
+    };
   }
 
   private spawnNextProduct(): SimulationSnapshot {
@@ -504,6 +630,9 @@ export class SimEngine {
 
     // Archive the current product
     this.archiveCurrentProduct(s.outputBin!);
+
+    // Build and store the product trace
+    s.productTraces.push(this.buildProductTrace(s));
 
     // Emit product_completed summary event
     const summaryEvt = this.makeEvent(s.step, 'product_completed', s.outputBin!,
@@ -515,8 +644,15 @@ export class SimEngine {
     this.unscrewSucceeded = false;
     this.inspectionDone = false;
     this.pendingObservations = [];
+    this.routePath = [];
+    this.escalated = false;
+    this.evidenceRequestCount = 0;
+    this.beliefHistory = [];
     s.unscrewAttempts = 0;
     s.unscrewSucceeded = false;
+    s.evidenceRequestCount = 0;
+    s.decisionHistory = [];
+    s.currentDecision = null;
 
     // Generate new product (RNG continues, no reseed)
     const newProduct = generateProduct(this.rng, this.scenario);
@@ -526,9 +662,12 @@ export class SimEngine {
 
     // Reset belief
     const belief = createInitialBelief();
-    const initCtx: PolicyContext = { unscrewAttempts: 0, unscrewSucceeded: false, _events: s.events };
-    belief.recommendedAction = selectPolicy(belief, 'input_buffer', initCtx);
+    const initCtx: PolicyContext = { unscrewAttempts: 0, unscrewSucceeded: false, evidenceRequestCount: 0, _events: s.events };
+    belief.recommendedAction = selectPolicy(belief, 'input_buffer', initCtx, this.config);
     s.belief = belief;
+
+    // Record initial belief snapshot
+    this.recordBeliefSnapshot(s);
 
     // Reset station states (all idle, no items)
     const stations = makeStations();
@@ -558,8 +697,8 @@ export class SimEngine {
     stations.input_buffer.status = 'idle';
 
     const belief = createInitialBelief();
-    const initCtx: PolicyContext = { unscrewAttempts: 0, unscrewSucceeded: false, _events: [] };
-    belief.recommendedAction = selectPolicy(belief, 'input_buffer', initCtx);
+    const initCtx: PolicyContext = { unscrewAttempts: 0, unscrewSucceeded: false, evidenceRequestCount: 0, _events: [] };
+    belief.recommendedAction = selectPolicy(belief, 'input_buffer', initCtx, this.config);
 
     const arrivalEvent: SimEvent = {
       step: 0,
@@ -567,6 +706,13 @@ export class SimEngine {
       station: 'input_buffer',
       description: `Product ${product.id} arrived at Input Buffer`,
     };
+
+    // Record initial belief
+    this.beliefHistory = [{
+      step: 0,
+      beliefs: { ...belief.beliefs },
+      uncertainty: belief.uncertainty,
+    }];
 
     return {
       step: 0,
@@ -584,6 +730,10 @@ export class SimEngine {
       binCounts: {},
       unscrewAttempts: 0,
       unscrewSucceeded: false,
+      currentDecision: null,
+      decisionHistory: [],
+      productTraces: [],
+      evidenceRequestCount: 0,
     };
   }
 
@@ -595,6 +745,9 @@ export class SimEngine {
     st.status = 'busy';
     st.itemPresent = true;
     st.processingTimeLeft = PROCESSING_TICKS[station];
+
+    // Track route path
+    this.routePath.push(station);
 
     // Queue observations for certain stations
     if (station === 'inspection' && !this.inspectionDone) {
@@ -626,7 +779,7 @@ export class SimEngine {
     s.events.push(evt);
     s.lastEvent = evt;
 
-    s.belief.recommendedAction = selectPolicy(s.belief, station, this.policyCtx());
+    s.belief.recommendedAction = selectPolicy(s.belief, station, this.policyCtx(), this.config);
     s.enabledTransitions = computeEnabled(station, s.belief, this.policyCtx());
 
     return this.getSnapshot();
@@ -643,11 +796,33 @@ export class SimEngine {
         return 'inspection';
 
       case 'inspection': {
-        const rec = selectPolicy(s.belief, station, this.policyCtx());
+        const rec = selectPolicy(s.belief, station, this.policyCtx(), this.config);
         s.belief.recommendedAction = rec;
-        if (rec.action === 'reroute_battery') return 'battery_check';
-        if (rec.action === 'escalate' || rec.action === 'reroute_operator') return 'manual_escalation';
-        return 'unscrewing';
+
+        // Handle seek_evidence: re-route to inspection for additional observation
+        if (
+          rec.action === 'seek_evidence' &&
+          this.evidenceRequestCount < this.config.maxEvidenceRequests
+        ) {
+          this.evidenceRequestCount += 1;
+          s.evidenceRequestCount = this.evidenceRequestCount;
+          this.recordDecision(s, station, rec, 'inspection');
+          return 'inspection';
+        }
+
+        let nextInsp: StationId;
+        if (rec.action === 'reroute_battery') {
+          nextInsp = 'battery_check';
+        } else if (rec.action === 'escalate' || rec.action === 'reroute_operator') {
+          nextInsp = 'manual_escalation';
+          this.escalated = true;
+        } else if (rec.action === 'abstain') {
+          nextInsp = 'output_unresolved';
+        } else {
+          nextInsp = 'unscrewing';
+        }
+        this.recordDecision(s, station, rec, nextInsp);
+        return nextInsp;
       }
 
       case 'unscrewing': {
@@ -658,6 +833,7 @@ export class SimEngine {
 
         const obs = generateUnscrewingObservation(this.rng, s.product, s.step, succeeded);
         s.belief = updateBelief(s.belief, obs);
+        this.recordBeliefSnapshot(s);
 
         if (succeeded) {
           this.unscrewSucceeded = true;
@@ -668,38 +844,70 @@ export class SimEngine {
             `Belief updated: unscrewing success observed`);
           s.events.push(evt);
           s.lastEvent = evt;
-          return selectOutputBin(s.belief);
+
+          // Enforce supervisor containment: if at max attempts, must escalate
+          if (this.unscrewAttempts >= this.config.maxUnscrewAttempts) {
+            this.escalated = true;
+            const bin = 'manual_escalation' as StationId;
+            const binRec = selectPolicy(s.belief, station, this.policyCtx(), this.config);
+            this.recordDecision(s, station, binRec, bin);
+            return bin;
+          }
+
+          const binSnap = this.buildMinimalSnapshot(s);
+          const bin = selectOutputBin(binSnap, this.config);
+          const binRec = selectPolicy(s.belief, station, this.policyCtx(), this.config);
+          this.recordDecision(s, station, binRec, bin);
+          return bin;
         }
 
         // Failure
         const failEvt: EventType = 'unscrewing_failed';
         const evt = this.makeEvent(s.step, failEvt, station,
-          `Unscrewing failed on attempt ${this.unscrewAttempts} — ${obs.evidence}`, obs,
+          `Unscrewing failed on attempt ${this.unscrewAttempts} \u2014 ${obs.evidence}`, obs,
           `Belief updated: unscrewing failure observed`);
         s.events.push(evt);
         s.lastEvent = evt;
 
-        const rec = selectPolicy(s.belief, station, this.policyCtx());
+        const rec = selectPolicy(s.belief, station, this.policyCtx(), this.config);
         s.belief.recommendedAction = rec;
 
-        if (rec.action === 'reroute_operator' || rec.action === 'escalate') return 'manual_escalation';
-        // Retry unscrewing
-        return 'unscrewing';
+        let nextUnscrew: StationId;
+        if (rec.action === 'reroute_operator' || rec.action === 'escalate') {
+          nextUnscrew = 'manual_escalation';
+          this.escalated = true;
+        } else if (rec.action === 'seek_evidence' && this.evidenceRequestCount < this.config.maxEvidenceRequests) {
+          this.evidenceRequestCount += 1;
+          s.evidenceRequestCount = this.evidenceRequestCount;
+          nextUnscrew = 'inspection';
+        } else {
+          // Retry unscrewing
+          nextUnscrew = 'unscrewing';
+        }
+        this.recordDecision(s, station, rec, nextUnscrew);
+        return nextUnscrew;
       }
 
       case 'battery_check': {
+        const recBat = selectPolicy(s.belief, station, this.policyCtx(), this.config);
+        s.belief.recommendedAction = recBat;
+
+        let nextBat: StationId;
         if (s.belief.beliefs.battery_hazard > 0.5) {
           const evt = this.makeEvent(s.step, 'battery_risk_flagged', station,
-            `Battery deemed hazardous (belief=${(s.belief.beliefs.battery_hazard * 100).toFixed(0)}%) — routing to hazardous output`);
+            `Battery deemed hazardous (belief=${(s.belief.beliefs.battery_hazard * 100).toFixed(0)}%) \u2014 routing to hazardous output`);
           s.events.push(evt);
           s.lastEvent = evt;
-          return 'output_hazardous';
+          nextBat = 'output_hazardous';
+        } else {
+          const evt = this.makeEvent(s.step, 'battery_cleared', station,
+            'Battery cleared \u2014 proceeding to unscrewing');
+          s.events.push(evt);
+          s.lastEvent = evt;
+          nextBat = 'unscrewing';
         }
-        const evt = this.makeEvent(s.step, 'battery_cleared', station,
-          'Battery cleared — proceeding to unscrewing');
-        s.events.push(evt);
-        s.lastEvent = evt;
-        return 'unscrewing';
+        this.recordDecision(s, station, recBat, nextBat);
+        return nextBat;
       }
 
       case 'manual_escalation': {
@@ -707,7 +915,11 @@ export class SimEngine {
           `Operator resolved diagnosis for product ${s.product.id}`);
         s.events.push(evt);
         s.lastEvent = evt;
-        return selectOutputBin(s.belief);
+        const escSnap = this.buildMinimalSnapshot(s);
+        const bin = selectOutputBin(escSnap, this.config);
+        const recEsc = selectPolicy(s.belief, station, this.policyCtx(), this.config);
+        this.recordDecision(s, station, recEsc, bin);
+        return bin;
       }
 
       // Output bins
@@ -719,6 +931,11 @@ export class SimEngine {
   private transitionTo(target: StationId): SimulationSnapshot {
     const s = this.snapshot;
     const from = s.currentStation;
+
+    // Mark escalated when routing to manual_escalation
+    if (target === 'manual_escalation') {
+      this.escalated = true;
+    }
 
     // Leave old station
     s.stations[from].status = 'idle';
@@ -734,13 +951,16 @@ export class SimEngine {
       s.stations[target].status = 'idle';
       s.outputBin = target;
 
+      // Track the output bin in route path
+      this.routePath.push(target);
+
       const evtType: EventType = 'item_binned';
       const evt = this.makeEvent(s.step, evtType, target,
         `Product ${s.product.id} binned at ${STATION_LABELS[target]}`);
       s.events.push(evt);
 
       const compEvt = this.makeEvent(s.step, 'item_completed', target,
-        `Disassembly complete — product ${s.product.id} classified as ${STATION_LABELS[target].replace('Output – ', '').toLowerCase()}`);
+        `Disassembly complete \u2014 product ${s.product.id} classified as ${STATION_LABELS[target].replace('Output \u2013 ', '').toLowerCase()}`);
       s.events.push(compEvt);
       s.lastEvent = compEvt;
 
@@ -748,9 +968,11 @@ export class SimEngine {
       if (s.completedProducts.length + 1 >= this.maxProducts) {
         // Archive this product before completing
         this.archiveCurrentProduct(target);
+        // Build and store the product trace
+        s.productTraces.push(this.buildProductTrace(s));
         s.phase = 'completed';
         s.enabledTransitions = [];
-        s.belief.recommendedAction = { action: 'complete', reason: 'Product limit reached — simulation complete', confidence: 1 };
+        s.belief.recommendedAction = { action: 'complete', reason: 'Product limit reached \u2014 simulation complete', confidence: 1 };
         return this.getSnapshot();
       }
 
@@ -764,14 +986,14 @@ export class SimEngine {
     // Transfer event
     const transferType: EventType = from !== target ? 'transfer_started' : 'transfer_completed';
     const evt = this.makeEvent(s.step, transferType, target,
-      `Transferring product from ${STATION_LABELS[from]} → ${STATION_LABELS[target]}`);
+      `Transferring product from ${STATION_LABELS[from]} \u2192 ${STATION_LABELS[target]}`);
     s.events.push(evt);
     s.lastEvent = evt;
 
     s.currentStation = target;
     s.stations[target].itemPresent = true;
     s.stations[target].status = 'idle';
-    s.belief.recommendedAction = selectPolicy(s.belief, target, this.policyCtx());
+    s.belief.recommendedAction = selectPolicy(s.belief, target, this.policyCtx(), this.config);
     s.enabledTransitions = computeEnabled(target, s.belief, this.policyCtx());
 
     // Start processing at new station immediately
