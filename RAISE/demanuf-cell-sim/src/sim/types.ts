@@ -79,11 +79,83 @@ export interface BeliefState {
   recommendedAction: PolicyRecommendation;
 }
 
+// ── Decision classification ──────────────────────────────────────────
+export type DecisionConfidenceLevel = 'confident' | 'moderate' | 'low' | 'abstaining';
+
+export type DecisionType =
+  | 'route_confident'       // High confidence in destination
+  | 'route_moderate'        // Moderate confidence, proceeding anyway
+  | 'abstain_unresolved'    // Insufficient evidence → unresolved
+  | 'escalate_uncertainty'  // Too uncertain → operator
+  | 'escalate_hazard'       // Hazard guard triggered
+  | 'escalate_structural'   // Structural issue suspected
+  | 'seek_evidence'         // Requesting additional observation
+  | 'retry_operation'       // Retrying a failed operation
+  | 'complete';             // Product finished
+
+// ── Structured decision object ───────────────────────────────────────
+export interface StructuredDecision {
+  type: DecisionType;
+  selectedRoute: StationId | null;     // null if seeking evidence
+  confidenceLevel: DecisionConfidenceLevel;
+
+  // Numerical evidence summary
+  topHypothesis: { hypothesis: Hypothesis; probability: number };
+  top2Hypothesis: { hypothesis: Hypothesis; probability: number } | null;
+  top2Margin: number;
+  uncertainty: number;
+  hazardPresent: boolean;
+
+  // Reason codes (machine-readable)
+  reasonCodes: string[];
+
+  // Human-readable summary
+  reason: string;
+
+  // What alternatives were considered
+  enabledAlternatives: StationId[];
+
+  // Decision source
+  source: 'standard_policy' | 'escalation' | 'mediation' | 'evidence_request';
+
+  // Whether additional evidence was available but not requested
+  additionalEvidenceAvailable: boolean;
+  evidenceRequestCount: number;
+}
+
+// ── Decision record for containment logging ──────────────────────────
+export interface DecisionRecord {
+  step: number;
+  station: StationId;
+  decision: StructuredDecision;
+  beliefSnapshot: Record<Hypothesis, number>;
+  enabledTransitions: StationId[];
+  selected: StationId;
+  blocked: StationId[];
+}
+
+// ── Per-product trace ────────────────────────────────────────────────
+export interface ProductTrace {
+  productId: string;
+  productNumber: number;
+  trueCondition: HiddenCondition;
+  startStep: number;
+  endStep: number;
+  outputBin: StationId;
+  decisions: DecisionRecord[];
+  beliefEvolution: Array<{ step: number; beliefs: Record<Hypothesis, number>; uncertainty: number }>;
+  observations: Observation[];
+  evidenceRequests: number;
+  escalated: boolean;
+  abstained: boolean;
+}
+
 // ── Policy recommendation ────────────────────────────────────────────
 export interface PolicyRecommendation {
-  action: 'continue' | 'inspect_more' | 'reroute_battery' | 'reroute_operator' | 'escalate' | 'abort' | 'complete';
+  action: 'continue' | 'inspect_more' | 'reroute_battery' | 'reroute_operator' | 'escalate' | 'abort' | 'complete' | 'seek_evidence' | 'abstain';
   reason: string;
   confidence: number;
+  decision?: StructuredDecision;
 }
 
 // ── Station state ────────────────────────────────────────────────────
@@ -125,6 +197,11 @@ export interface CompletedProduct {
   finalUncertainty: number;
   dominantBelief: { hypothesis: Hypothesis; confidence: number };
   beliefCorrect: boolean;
+  escalated: boolean;
+  abstained: boolean;
+  evidenceRequests: number;
+  decisionCount: number;
+  routePath: StationId[];
 }
 
 // ── Complete simulation snapshot ─────────────────────────────────────
@@ -144,6 +221,10 @@ export interface SimulationSnapshot {
   binCounts: Record<string, number>;
   unscrewAttempts: number;
   unscrewSucceeded: boolean;
+  currentDecision: StructuredDecision | null;
+  decisionHistory: DecisionRecord[];
+  productTraces: ProductTrace[];
+  evidenceRequestCount: number;
 }
 
 // ── Scenario preset ──────────────────────────────────────────────────
